@@ -33,9 +33,11 @@ const Index = () => {
                   via Supabase integration.
                 </p>
               </div>
-              <Button variant="hero" size="lg">
-                Connect Backend Services
-              </Button>
+              <a href="/auth">
+                <Button variant="hero" size="lg">
+                  Get Started - Sign In
+                </Button>
+              </a>
             </Card>
           </div>
         </section>
