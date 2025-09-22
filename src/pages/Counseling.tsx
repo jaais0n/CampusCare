@@ -51,8 +51,8 @@ const Counseling = () => {
   const [selectedCounselor, setSelectedCounselor] = useState("");
   const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
-  const [category, setCategory] = useState<"academic" | "personal" | "career" | "mental_health">("personal");
-  const [mode, setMode] = useState<"in_person" | "online" | "phone">("online");
+  const [category, setCategory] = useState<"academic" | "personal" | "career" | "stress" | "relationships" | "other">("personal");
+  const [mode, setMode] = useState<"in_person" | "online">("online");
   const [issueDescription, setIssueDescription] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [anonymousContact, setAnonymousContact] = useState("");
@@ -142,7 +142,7 @@ const Counseling = () => {
         issue_description: issueDescription,
         is_anonymous: isAnonymous,
         anonymous_contact: isAnonymous ? anonymousContact : null,
-        status: "pending",
+        status: "pending" as const,
       });
 
     if (error) {

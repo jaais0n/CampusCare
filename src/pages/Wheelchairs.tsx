@@ -329,7 +329,7 @@ const Wheelchairs = () => {
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary/10 rounded-lg">
-                      <Wheelchair className="w-5 h-5 text-primary" />
+                      <Activity className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <CardTitle className="text-lg">{wheelchair.wheelchair_type}</CardTitle>
@@ -370,7 +370,7 @@ const Wheelchairs = () => {
             {bookings.length === 0 ? (
               <Card className="text-center py-12">
                 <CardContent>
-                  <Wheelchair className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-foreground mb-2">No Bookings Yet</h3>
                   <p className="text-muted-foreground mb-4">Book your first wheelchair</p>
                   <Button onClick={() => setIsOpen(true)} className="bg-gradient-primary">
@@ -385,7 +385,7 @@ const Wheelchairs = () => {
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-lg">
-                          <Wheelchair className="w-5 h-5 text-primary" />
+                          <Activity className="w-5 h-5 text-primary" />
                         </div>
                         <div>
                           <CardTitle className="text-lg">
