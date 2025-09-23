@@ -25,37 +25,43 @@ const Dashboard = () => {
       title: "Emergency SOS",
       description: "Instant emergency alert",
       color: "bg-destructive/10 text-destructive border-destructive/20",
-      urgent: true
+      urgent: true,
+      href: "/emergency"
     },
     {
       icon: Calendar,
       title: "Book Appointment",
       description: "Schedule with doctors",
-      color: "bg-primary/10 text-primary border-primary/20"
+      color: "bg-primary/10 text-primary border-primary/20",
+      href: "/appointments"
     },
     {
       icon: Pill,
       title: "Order Medicine",
       description: "Browse pharmacy",
-      color: "bg-success/10 text-success border-success/20"
+      color: "bg-success/10 text-success border-success/20",
+      href: "/medicines"
     },
     {
       icon: MessageCircle,
       title: "Counseling",
       description: "Book session",
-      color: "bg-warning/10 text-warning border-warning/20"
+      color: "bg-warning/10 text-warning border-warning/20",
+      href: "/counseling"
     },
     {
       icon: Brain,
       title: "Wellness Tips",
       description: "Daily activities",
-      color: "bg-primary/10 text-primary border-primary/20"
+      color: "bg-primary/10 text-primary border-primary/20",
+      href: "/wellness"
     },
     {
       icon: Accessibility,
       title: "Accessibility",
       description: "Book wheelchair",
-      color: "bg-accent/10 text-foreground border-accent/20"
+      color: "bg-accent/10 text-foreground border-accent/20",
+      href: "/wheelchairs"
     }
   ];
 
@@ -124,6 +130,7 @@ const Dashboard = () => {
                   className={`p-4 border transition-all duration-300 hover:shadow-glow hover:translate-y-[-2px] cursor-pointer ${action.color} ${
                     action.urgent ? 'sos-pulse' : ''
                   }`}
+                  onClick={() => window.location.href = action.href}
                 >
                   <div className="flex items-center space-x-4">
                     <div className="p-2 rounded-lg bg-background/50">

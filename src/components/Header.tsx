@@ -44,11 +44,13 @@ const Header = () => {
   };
 
   const navigationItems = [
-    { name: "Dashboard", href: "/dashboard" },
-    { name: "Emergency", href: "#emergency" },
-    { name: "Health Services", href: "#health" },
-    { name: "Wellness", href: "#wellness" },
-    { name: "Support", href: "#support" },
+    { name: "Dashboard", href: "/dashboard", icon: "🏠" },
+    { name: "Emergency", href: "/emergency", icon: "🚨" },
+    { name: "Appointments", href: "/appointments", icon: "🩺" },
+    { name: "Medicines", href: "/medicines", icon: "💊" },
+    { name: "Counseling", href: "/counseling", icon: "🧠" },
+    { name: "Wheelchairs", href: "/wheelchairs", icon: "♿" },
+    { name: "Wellness", href: "/wellness", icon: "🧘" },
   ];
 
   return (
@@ -72,8 +74,9 @@ const Header = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className="text-muted-foreground hover:text-primary transition-smooth font-medium"
+                className="text-muted-foreground hover:text-primary transition-smooth font-medium flex items-center gap-2"
               >
+                <span>{item.icon}</span>
                 {item.name}
               </Link>
             ))}
@@ -81,14 +84,29 @@ const Header = () => {
 
           {/* Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" className="text-muted-foreground hover:text-primary">
-              Login
-            </Button>
-            <Link to="/dashboard">
-              <Button className="bg-gradient-primary text-primary-foreground hover:shadow-glow transition-smooth">
-                Get Started
-              </Button>
-            </Link>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-muted-foreground">
+                  Welcome, {user.email?.split('@')[0]}
+                </span>
+                <Button variant="ghost" onClick={signOut} className="text-muted-foreground hover:text-primary">
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="ghost" className="text-muted-foreground hover:text-primary">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button className="bg-gradient-primary text-primary-foreground hover:shadow-glow transition-smooth">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -109,21 +127,32 @@ const Header = () => {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className="text-muted-foreground hover:text-primary transition-smooth font-medium py-2"
+                  className="text-muted-foreground hover:text-primary transition-smooth font-medium py-2 flex items-center gap-3"
                   onClick={() => setIsMenuOpen(false)}
                 >
+                  <span className="text-xl">{item.icon}</span>
                   {item.name}
                 </Link>
               ))}
               <div className="flex flex-col space-y-3 pt-4 border-t border-border">
-                <Button variant="ghost" className="justify-start">
-                  Login
-                </Button>
-                <Link to="/dashboard">
-                  <Button className="bg-gradient-primary text-primary-foreground">
-                    Get Started
+                {user ? (
+                  <Button variant="ghost" onClick={signOut} className="justify-start">
+                    Sign Out ({user.email?.split('@')[0]})
                   </Button>
-                </Link>
+                ) : (
+                  <>
+                    <Link to="/auth">
+                      <Button variant="ghost" className="justify-start">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link to="/auth">
+                      <Button className="bg-gradient-primary text-primary-foreground">
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>

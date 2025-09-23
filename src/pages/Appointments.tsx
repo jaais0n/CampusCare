@@ -183,10 +183,10 @@ const Appointments = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 pt-16">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Medical Appointments</h1>
-            <p className="text-muted-foreground">Book and manage your medical consultations</p>
+            <p className="text-muted-foreground">Book and manage your campus health consultations</p>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
@@ -274,6 +274,56 @@ const Appointments = () => {
                     onChange={(e) => setSymptoms(e.target.value)}
                     placeholder="List any symptoms you're experiencing..."
                   />
+                </div>
+
+                <div className="bg-primary/5 p-3 rounded-lg">
+                  <h4 className="text-sm font-medium text-primary mb-2">Campus Information</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Student/Staff ID</Label>
+                      <Input
+                        placeholder="e.g., STU12345"
+                        className="h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Department</Label>
+                      <Select>
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="computer-science">Computer Science</SelectItem>
+                          <SelectItem value="engineering">Engineering</SelectItem>
+                          <SelectItem value="business">Business</SelectItem>
+                          <SelectItem value="arts">Arts & Humanities</SelectItem>
+                          <SelectItem value="sciences">Sciences</SelectItem>
+                          <SelectItem value="staff">Staff</SelectItem>
+                          <SelectItem value="faculty">Faculty</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-xs">Residence/Office Location</Label>
+                      <Select>
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder="Select location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="north-dorm">North Dormitory</SelectItem>
+                          <SelectItem value="south-dorm">South Dormitory</SelectItem>
+                          <SelectItem value="east-dorm">East Dormitory</SelectItem>
+                          <SelectItem value="west-dorm">West Dormitory</SelectItem>
+                          <SelectItem value="graduate-housing">Graduate Housing</SelectItem>
+                          <SelectItem value="faculty-quarters">Faculty Quarters</SelectItem>
+                          <SelectItem value="admin-building">Administration Building</SelectItem>
+                          <SelectItem value="academic-block-a">Academic Block A</SelectItem>
+                          <SelectItem value="academic-block-b">Academic Block B</SelectItem>
+                          <SelectItem value="library">Library Complex</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
 
                 <Button type="submit" disabled={loading} className="w-full bg-gradient-primary">
