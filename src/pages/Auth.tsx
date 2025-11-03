@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,11 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState<"student" | "faculty" | "admin">("student");
+  // Role is fixed to 'student' for account creation
+  const role: "student" = "student";
   const [rollNumber, setRollNumber] = useState("");
   const [course, setCourse] = useState("");
   const [department, setDepartment] = useState("");
@@ -29,28 +31,34 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        if (session?.user) {
-          navigate("/dashboard");
-        }
-      }
-    );
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        navigate("/dashboard");
+        const metaRole = (session.user!.user_metadata as any)?.role as string | undefined;
+        const r = (metaRole || '').toLowerCase();
+        if (r === 'admin') {
+          navigate('/admin', { replace: true });
+          return;
+        }
+        const em = session.user!.email?.toLowerCase();
+        navigate(em === 'admin@university.edu' ? '/admin' : '/', { replace: true });
+        return;
       }
     });
-
-    return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Render-time guard: if already signed in, redirect deterministically
+  const metaRole = (session?.user?.user_metadata as any)?.role as string | undefined;
+  const isAdminNow = (metaRole || "").toLowerCase() === "admin" || (session?.user?.email?.toLowerCase() === "admin@university.edu");
+  if (session?.user) {
+    return <Navigate to={isAdminNow ? "/admin" : "/"} replace />;
+  }
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Pure auth only (demo bypass removed)
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -64,10 +72,19 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in.",
-      });
+      // Successful sign-in: route by role (metadata or admin email)
+      const { data: { session } } = await supabase.auth.getSession();
+      let role: string | undefined = (session?.user?.user_metadata as any)?.role;
+      toast({ title: "Welcome back!" });
+      const r = (role || '').toLowerCase();
+      if (r === 'admin') {
+        window.location.replace('/admin');
+        return;
+      } else {
+        const em = session?.user?.email?.toLowerCase();
+        window.location.replace(em === 'admin@university.edu' ? '/admin' : '/');
+        return;
+      }
     }
     setLoading(false);
   };
@@ -76,11 +93,26 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    // Enforce university email for non-admin users
+    // Enforce university email domain for student signups
+    {
+      const universityPattern = /^[A-Za-z0-9]+@university\.edu$/;
+      if (!universityPattern.test(email.trim())) {
+        toast({
+          title: "Invalid Email",
+          description: "Students must use their university email (e.g., 24mscs09@university.edu).",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        // No email authentication/confirmation required
         data: {
           full_name: fullName,
           phone,
@@ -101,10 +133,38 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
-      toast({
-        title: "Account Created!",
-        description: "Please check your email to verify your account.",
-      });
+      // If a session exists, proceed; otherwise auto sign-in (no email auth)
+      let userId = data.session?.user?.id;
+      if (!userId) {
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInErr) {
+          toast({ title: "Sign In After Sign Up Failed", description: signInErr.message, variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+        userId = signInData.session?.user?.id;
+      }
+      if (userId) {
+        // Best-effort create/update profile row (RLS allows self-upsert)
+        const { error: upsertErr } = await supabase.from('profiles').upsert({
+          id: userId,
+          full_name: fullName,
+          phone,
+          role,
+          roll_number: rollNumber,
+          course,
+          department,
+          faculty_id: facultyId,
+          designation,
+        } as any);
+        if (upsertErr) {
+          // Non-blocking warning
+          toast({ title: "Signed up (profile pending)", description: upsertErr.message });
+        }
+
+        // Route to student home after signup
+        navigate('/');
+      }
     }
     setLoading(false);
   };
@@ -149,7 +209,7 @@ const Auth = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your.email@university.edu"
+                      placeholder="rollno@university.edu"
                       required
                       className="bg-background/50 border-border focus:border-primary"
                     />
@@ -178,6 +238,7 @@ const Auth = () => {
                   >
                     {loading ? "Signing In..." : "Sign In"}
                   </Button>
+                  {/* Removed demo credentials hint */}
                 </form>
               </TabsContent>
 
@@ -193,7 +254,7 @@ const Auth = () => {
                         id="fullName"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="John Doe"
+                        placeholder="David Mathew"
                         required
                         className="bg-background/50 border-border focus:border-primary"
                       />
@@ -208,7 +269,7 @@ const Auth = () => {
                         id="phone"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+1 (555) 123-4567"
+                        placeholder="+91 999XXXXXXX"
                         className="bg-background/50 border-border focus:border-primary"
                       />
                     </div>
@@ -224,7 +285,7 @@ const Auth = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your.email@university.edu"
+                      placeholder={'rollno@university.edu'}
                       required
                       className="bg-background/50 border-border focus:border-primary"
                     />
@@ -246,19 +307,7 @@ const Auth = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-foreground">Role</Label>
-                    <Select value={role} onValueChange={(value: "student" | "faculty" | "admin") => setRole(value)}>
-                      <SelectTrigger className="bg-background/50 border-border focus:border-primary">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="faculty">Faculty</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Role selection removed: only Student accounts can be created here */}
 
                   {role === "student" && (
                     <div className="grid grid-cols-2 gap-4">
@@ -271,7 +320,7 @@ const Auth = () => {
                           id="rollNumber"
                           value={rollNumber}
                           onChange={(e) => setRollNumber(e.target.value)}
-                          placeholder="CS2024001"
+                          placeholder="24MCAB23"
                           className="bg-background/50 border-border focus:border-primary"
                         />
                       </div>
@@ -292,36 +341,7 @@ const Auth = () => {
                     </div>
                   )}
 
-                  {role === "faculty" && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="facultyId" className="flex items-center gap-2 text-foreground">
-                          <IdCard className="w-4 h-4" />
-                          Faculty ID
-                        </Label>
-                        <Input
-                          id="facultyId"
-                          value={facultyId}
-                          onChange={(e) => setFacultyId(e.target.value)}
-                          placeholder="FAC2024"
-                          className="bg-background/50 border-border focus:border-primary"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="designation" className="text-foreground">
-                          Designation
-                        </Label>
-                        <Input
-                          id="designation"
-                          value={designation}
-                          onChange={(e) => setDesignation(e.target.value)}
-                          placeholder="Assistant Professor"
-                          className="bg-background/50 border-border focus:border-primary"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  {/* Faculty option removed from sign up */}
 
                   <div className="space-y-2">
                     <Label htmlFor="department" className="text-foreground">Department</Label>
@@ -347,11 +367,7 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-6">
-          <p className="text-muted-foreground text-sm">
-            Secure authentication powered by Supabase
-          </p>
-        </div>
+        {/* removed vendor-specific attribution */}
       </div>
     </div>
   );

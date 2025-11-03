@@ -9,7 +9,7 @@ import { Pill, Plus, Minus, ShoppingCart, Search, Package, Clock } from "lucide-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import Header from "@/components/Header";
+import { BackBar } from "@/components/BackBar";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface Medicine {
@@ -322,82 +322,88 @@ const Medicines = () => {
     setLoading(false);
   };
 
-  const filteredMedicines = medicines.filter(medicine =>
-    medicine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    medicine.generic_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    medicine.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+const filteredMedicines = medicines.filter(medicine =>
+  medicine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  medicine.generic_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  medicine.category.toLowerCase().includes(searchTerm.toLowerCase())
+);
 
-  const cartTotal = cartItems.reduce(
-    (sum, item) => sum + (item.medicines.price * item.quantity), 
-    0
-  );
+// Cart total and status color helpers
+const cartTotal = cartItems.reduce(
+  (sum, item) => sum + item.medicines.price * item.quantity,
+  0
+);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending": return "text-warning bg-warning/10";
-      case "approved": return "text-primary bg-primary/10";
-      case "delivered": return "text-success bg-success/10";
-      case "cancelled": return "text-destructive bg-destructive/10";
-      default: return "text-muted-foreground bg-muted/10";
-    }
-  };
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "pending":
+      return "text-warning bg-warning/10";
+    case "approved":
+      return "text-primary bg-primary/10";
+    case "delivered":
+      return "text-success bg-success/10";
+    case "cancelled":
+      return "text-destructive bg-destructive/10";
+    default:
+      return "text-muted-foreground bg-muted/10";
+  }
+};
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Medicine Store</h1>
-            <p className="text-muted-foreground">Order medicines and health products</p>
-          </div>
-          <div className="flex gap-2">
-            <Dialog open={isOrdersOpen} onOpenChange={setIsOrdersOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Package className="w-4 h-4 mr-2" />
-                  My Orders
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>My Orders</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <Card key={order.id}>
-                      <CardHeader>
-                        <div className="flex justify-between items-center">
-                          <CardTitle className="text-lg">{order.order_number}</CardTitle>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
-                            {order.status}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          Ordered on {new Date(order.ordered_at).toLocaleDateString()}
-                        </p>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {order.order_items.map((item, index) => (
-                            <div key={index} className="flex justify-between items-center text-sm">
-                              <span>{item.medicines.name} × {item.quantity}</span>
-                              <span>₹{(item.unit_price * item.quantity).toFixed(2)}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="border-t pt-2 mt-2">
-                          <div className="flex justify-between font-semibold">
-                            <span>Total: ₹{order.total_amount.toFixed(2)}</span>
+return (
+  <div className="min-h-screen bg-background">
+    <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+      <BackBar label="Back" to="/" />
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Medicine Store</h1>
+          <p className="text-muted-foreground">Order medicines and health products</p>
+        </div>
+        <div className="flex gap-2">
+          <Dialog open={isOrdersOpen} onOpenChange={setIsOrdersOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Package className="w-4 h-4 mr-2" />
+                My Orders
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>My Orders</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {orders.map((order) => (
+                  <Card key={order.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-lg">{order.order_number}</CardTitle>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                          {order.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Ordered on {new Date(order.ordered_at).toLocaleDateString()}
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {order.order_items.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center text-sm">
+                            <span>{item.medicines.name} × {item.quantity}</span>
+                            <span>₹{(item.unit_price * item.quantity).toFixed(2)}</span>
                           </div>
+                        ))}
+                      </div>
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between font-semibold">
+                          <span>Total: ₹{order.total_amount.toFixed(2)}</span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </DialogContent>
-            </Dialog>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
             
             <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
               <DialogTrigger asChild>
@@ -577,7 +583,6 @@ const Medicines = () => {
             </Card>
           ))}
         </div>
-
         {filteredMedicines.length === 0 && (
           <Card className="text-center py-12">
             <CardContent>
@@ -587,7 +592,7 @@ const Medicines = () => {
             </CardContent>
           </Card>
         )}
-      </main>
+      </div>
     </div>
   );
 };

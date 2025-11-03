@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Phone, MapPin, Clock, Shield, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import Header from "@/components/Header";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface SOSAlert {
@@ -193,7 +192,6 @@ const Emergency = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <main className="max-w-4xl mx-auto px-4 py-24 text-center">
           <Shield className="w-16 h-16 text-primary mx-auto mb-6" />
           <h1 className="text-3xl font-bold text-foreground mb-4">Campus Emergency Services</h1>
@@ -212,8 +210,7 @@ const Emergency = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="pt-16 mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Campus Emergency Services</h1>
           <p className="text-muted-foreground">Quick access to emergency alerts and campus security</p>
@@ -415,7 +412,7 @@ const Emergency = () => {
             ))
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 };

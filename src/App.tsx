@@ -1,10 +1,11 @@
 import { Toaster } from "@/components/ui/toaster";
+import { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import Header from "@/components/Header";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Appointments from "./pages/Appointments";
 import Counseling from "./pages/Counseling";
@@ -13,8 +14,21 @@ import Wheelchairs from "./pages/Wheelchairs";
 import Wellness from "./pages/Wellness";
 import Emergency from "./pages/Emergency";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
+import AdminCounseling from "./pages/AdminCounseling";
+import AdminWheelchairs from "./pages/AdminWheelchairs";
+import AdminMedicalAppointment from "./pages/AdminMedicalAppointment";
 
 const queryClient = new QueryClient();
+
+// Scroll to top on route change
+const ScrollToTop = () => {
+  const location = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, [location.pathname]);
+  return null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -22,10 +36,15 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
+        <Header />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/counseling" element={<AdminCounseling />} />
+          <Route path="/admin/wheelchairs" element={<AdminWheelchairs />} />
+          <Route path="/admin/appointments" element={<AdminMedicalAppointment />} />
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/counseling" element={<Counseling />} />
           <Route path="/medicines" element={<Medicines />} />

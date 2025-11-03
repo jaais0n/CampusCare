@@ -1,73 +1,79 @@
-# Welcome to your Lovable project
+# CampusCare+ - Campus Wellness & Health Management Platform
 
-## Project info
+## Project Overview
 
-**URL**: https://lovable.dev/projects/90c65725-f1c9-4666-bae2-fa1131eaf217
+CampusCare+ is a comprehensive campus wellness platform designed to support the health and well-being of students and faculty. The application provides a range of services including emergency assistance, health services, counseling, and fitness programs.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **Emergency Assistance**: Quick access to emergency services and contacts
+- **Health Services**: Schedule appointments and access medical records
+- **Counseling Services**: Book counseling sessions and access mental health resources
+- **Fitness Programs**: Join fitness classes and track your wellness journey
+- **Wheelchair & Accessibility**: Book and manage accessibility resources
+- **Medicine Ordering**: Order medicines with campus delivery service
 
-**Use Lovable**
+## Technologies Used
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/90c65725-f1c9-4666-bae2-fa1131eaf217) and start prompting.
+- **Frontend**: React, TypeScript, Vite
+- **UI Components**: shadcn/ui
+- **Styling**: Tailwind CSS
+- **State Management**: React Query
+- **Form Handling**: React Hook Form with Zod validation
+- **Icons**: Lucide React
+- **Routing**: React Router
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js (v16 or higher)
+- npm (v8 or higher) or yarn
+- Git
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
+1. Clone the repository:
+   ```sh
+   git clone <YOUR_GIT_URL>
+   cd campuscareplus
+   ```
+
+2. Install dependencies:
+   ```sh
+   npm install
+   ```
+
+3. Start the development server:
+   ```sh
+   npm run dev
+   ```
+
+4. Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## Building for Production
+
+To create a production build:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+The build artifacts will be stored in the `dist/` directory.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Deployment
 
-**Use GitHub Codespaces**
+This project can be deployed to any static site hosting service. Some popular options include:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- Vercel
+- Netlify
+- GitHub Pages
+- AWS Amplify
 
-## What technologies are used for this project?
+## Contributing
 
-This project is built with:
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## License
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/90c65725-f1c9-4666-bae2-fa1131eaf217) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+This project is licensed under the MIT License.

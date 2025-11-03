@@ -1,12 +1,31 @@
--- Create user roles enum
-CREATE TYPE public.user_role AS ENUM ('student', 'faculty', 'admin');
-CREATE TYPE public.user_status AS ENUM ('active', 'inactive', 'suspended');
-CREATE TYPE public.booking_status AS ENUM ('pending', 'confirmed', 'completed', 'cancelled');
-CREATE TYPE public.alert_status AS ENUM ('active', 'resolved', 'false_alarm');
-CREATE TYPE public.order_status AS ENUM ('pending', 'approved', 'rejected', 'delivered');
-CREATE TYPE public.appointment_status AS ENUM ('scheduled', 'confirmed', 'completed', 'cancelled');
-CREATE TYPE public.counseling_mode AS ENUM ('in_person', 'online');
-CREATE TYPE public.counseling_category AS ENUM ('stress', 'career', 'personal', 'academic', 'relationships', 'other');
+-- Create user roles enum (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE public.user_role AS ENUM ('student', 'faculty', 'admin');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_status') THEN
+        CREATE TYPE public.user_status AS ENUM ('active', 'inactive', 'suspended');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'booking_status') THEN
+        CREATE TYPE public.booking_status AS ENUM ('pending', 'confirmed', 'completed', 'cancelled');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'alert_status') THEN
+        CREATE TYPE public.alert_status AS ENUM ('active', 'resolved', 'false_alarm');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
+        CREATE TYPE public.order_status AS ENUM ('pending', 'approved', 'rejected', 'delivered');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'appointment_status') THEN
+        CREATE TYPE public.appointment_status AS ENUM ('scheduled', 'confirmed', 'completed', 'cancelled');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'counseling_mode') THEN
+        CREATE TYPE public.counseling_mode AS ENUM ('in_person', 'online');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'counseling_category') THEN
+        CREATE TYPE public.counseling_category AS ENUM ('stress', 'career', 'personal', 'academic', 'relationships', 'other');
+    END IF;
+END$$;
 
 -- Profiles table for additional user information
 CREATE TABLE public.profiles (

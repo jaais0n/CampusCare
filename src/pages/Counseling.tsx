@@ -4,64 +4,67 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Plus, Calendar, Clock, MessageSquare, User, Shield } from "lucide-react";
+import { Brain, Calendar, Clock, MessageSquare, Plus, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import Header from "@/components/Header";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { BackBar } from "@/components/BackBar";
 
 interface Counselor {
   id: string;
   name: string;
   specialization: string[];
-  qualification: string;
-  experience_years: number;
-  available_days: string[];
-  available_modes: string[];
 }
 
 interface CounselingBooking {
   id: string;
   preferred_date: string;
   preferred_time: string;
-  category: string;
-  mode: string;
-  issue_description: string;
-  is_anonymous: boolean;
-  anonymous_contact: string;
   status: string;
   counselors: Counselor;
   confirmed_date?: string;
   confirmed_time?: string;
   meeting_link?: string;
+  is_anonymous?: boolean;
+  category?: 'academic' | 'personal' | 'career' | 'stress' | 'relationships' | 'other';
+  mode?: 'in_person' | 'online';
+  issue_description?: string;
   session_notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  anonymous_contact?: string;
 }
 
 const Counseling = () => {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [bookings, setBookings] = useState<CounselingBooking[]>([]);
-  const [counselors, setCounselors] = useState<Counselor[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  // Single counselor similar to medical
+  const [counselors] = useState<Counselor[]>([
+    { id: '1', name: 'Dr. Anita Verma', specialization: ['Counseling Psychologist'] }
+  ]);
   
-  // Form states
   const [selectedCounselor, setSelectedCounselor] = useState("");
   const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const [category, setCategory] = useState<"academic" | "personal" | "career" | "stress" | "relationships" | "other">("personal");
   const [mode, setMode] = useState<"in_person" | "online">("online");
   const [issueDescription, setIssueDescription] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [anonymousContact, setAnonymousContact] = useState("");
-
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  // Edit/Delete controls similar to medical
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<CounselingBooking | null>(null);
+  const [editTime, setEditTime] = useState("");
+  
   const { toast } = useToast();
 
+  // Mount-only: wire auth listener and set defaults
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setUser(session?.user ?? null);
       }
     );
@@ -70,57 +73,74 @@ const Counseling = () => {
       setUser(session?.user ?? null);
     });
 
-    fetchCounselors();
-    if (user) fetchBookings();
+    // Fixed today, default counselor and current time like medical
+    setPreferredDate(new Date().toISOString().split('T')[0]);
+    if (counselors && counselors.length > 0) {
+      setSelectedCounselor(counselors[0].id);
+    }
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    setPreferredTime(`${hh}:${mm}`);
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch once when user becomes available
+  useEffect(() => {
+    if (!user) return;
+    fetchBookings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const fetchCounselors = async () => {
-    const { data, error } = await supabase
-      .from("counselors")
-      .select("*")
-      .eq("is_active", true);
-    
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch counselors",
-        variant: "destructive",
-      });
-    } else {
-      setCounselors(data || []);
-    }
-  };
+  // Realtime: update when admin changes booking status
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return;
+      channel = supabase
+        .channel(`counseling-status-${userId}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'counseling_bookings', filter: `user_id=eq.${userId}` }, (payload: any) => {
+          const n = payload.new as any; const o = payload.old as any;
+          if (n?.status && n.status !== o?.status) {
+            const msg = n.status === 'confirmed' ? {t:'Session Approved', d:'Your counseling session has been approved.'}
+              : n.status === 'cancelled' ? {t:'Session Declined', d:'Your counseling session was declined.'}
+              : n.status === 'completed' ? {t:'Session Completed', d:'Your counseling session has been marked as completed.'}
+              : {t:'Session Updated', d:'Your counseling session was updated.'};
+            toast({ title: msg.t, description: msg.d, variant: n.status === 'cancelled' ? 'destructive' : 'default' });
+            setBookings(prev => prev.map(b => b.id === n.id ? { ...b, status: n.status } as any : b));
+          }
+        })
+        .subscribe();
+    };
+    init();
+    return () => { if (channel) supabase.removeChannel(channel); };
+  }, []);
 
   const fetchBookings = async () => {
     if (!user) return;
-    
     const { data, error } = await supabase
-      .from("counseling_bookings")
-      .select(`
-        *,
-        counselors (
-          id,
-          name,
-          specialization,
-          qualification,
-          experience_years,
-          available_days,
-          available_modes
-        )
-      `)
-      .eq("user_id", user.id)
-      .order("preferred_date", { ascending: false });
-    
+      .from('counseling_bookings')
+      .select('id, preferred_date, preferred_time, confirmed_date, confirmed_time, status')
+      .eq('user_id', user.id)
+      .order('preferred_date', { ascending: false });
+
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch bookings",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: 'Failed to fetch bookings', variant: 'destructive' });
     } else {
-      setBookings(data || []);
+      // Map to the CounselingBooking shape with a synthetic counselor
+      const mapped = (data || []).map((row: any) => ({
+        id: row.id,
+        preferred_date: row.preferred_date,
+        preferred_time: row.preferred_time,
+        confirmed_date: row.confirmed_date,
+        confirmed_time: row.confirmed_time,
+        status: row.status,
+        counselors: { id: '1', name: 'Dr. Anita Verma', specialization: ['Counseling Psychologist'] },
+      } as unknown as CounselingBooking));
+      setBookings(mapped);
     }
   };
 
@@ -129,6 +149,25 @@ const Counseling = () => {
     if (!user && !isAnonymous) return;
     
     setLoading(true);
+    // Prevent double booking for same counselor/date/time when pending or confirmed
+    const { data: existing } = await supabase
+      .from('counseling_bookings')
+      .select('id')
+      .eq('counselor_id', selectedCounselor)
+      .eq('preferred_date', preferredDate)
+      .eq('preferred_time', preferredTime)
+      .in('status', ['pending','confirmed'])
+      .limit(1);
+    if (existing && existing.length > 0) {
+      toast({ title: 'Slot already booked', description: 'Please choose a different time.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const meta: any = session?.user?.user_metadata || {};
+    const studentName = (meta.full_name || (session?.user?.email ? session.user.email.split("@")[0] : "")).toUpperCase();
+    const studentRoll = meta.roll_number || "";
 
     const { error } = await supabase
       .from("counseling_bookings")
@@ -142,6 +181,8 @@ const Counseling = () => {
         issue_description: issueDescription,
         is_anonymous: isAnonymous,
         anonymous_contact: isAnonymous ? anonymousContact : null,
+        student_name: studentName,
+        student_roll: studentRoll,
         status: "pending" as const,
       });
 
@@ -176,11 +217,29 @@ const Counseling = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending": return "text-warning bg-warning/10";
-      case "confirmed": return "text-success bg-success/10";
-      case "completed": return "text-primary bg-primary/10";
-      case "cancelled": return "text-destructive bg-destructive/10";
-      default: return "text-muted-foreground bg-muted/10";
+      case 'confirmed':
+        return 'bg-green-100 text-green-800';
+      case 'completed':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case 'pending':
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'approved';
+      case 'cancelled':
+        return 'declined';
+      case 'completed':
+        return 'completed';
+      case 'pending':
+      default:
+        return 'scheduled';
     }
   };
 
@@ -196,18 +255,18 @@ const Counseling = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+        <BackBar label="Back" to="/" />
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Counseling Services</h1>
-            <p className="text-muted-foreground">Professional support for your mental wellbeing</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Counseling</h1>
+            <p className="text-muted-foreground">Book with our campus counselor</p>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-primary hover:shadow-glow">
                 <Plus className="w-4 h-4 mr-2" />
-                Book Session
+                New Session
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
@@ -218,213 +277,72 @@ const Counseling = () => {
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={bookSession} className="space-y-4">
-                <div className="flex items-center space-x-2 p-3 bg-secondary/20 rounded-lg">
-                  <Switch
-                    id="anonymous"
-                    checked={isAnonymous}
-                    onCheckedChange={setIsAnonymous}
-                  />
-                  <Label htmlFor="anonymous" className="flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Anonymous Session
-                  </Label>
-                </div>
-
-                {isAnonymous && (
-                  <div className="space-y-2">
-                    <Label htmlFor="contact">Anonymous Contact Info</Label>
-                    <Input
-                      id="contact"
-                      value={anonymousContact}
-                      onChange={(e) => setAnonymousContact(e.target.value)}
-                      placeholder="How should we contact you? (phone/email)"
-                      required
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label> Counselor</Label>
+                      <Input value={`${counselors[0].name}`} readOnly />
+                    </div>
+                    <div className="space-y-2">
+                      <Label> Date</Label>
+                      <Input type="date" value={preferredDate} readOnly />
+                    </div>
                   </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label>Select Counselor</Label>
-                  <Select value={selectedCounselor} onValueChange={setSelectedCounselor} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a counselor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {counselors.map((counselor) => (
-                        <SelectItem key={counselor.id} value={counselor.id}>
-                          {counselor.name} - {counselor.specialization.join(", ")}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Preferred Date</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={preferredDate}
-                      onChange={(e) => setPreferredDate(e.target.value)}
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label> Time</Label>
+                      <Input type="time" value={preferredTime} onChange={(e) => setPreferredTime(e.target.value)} />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="time">Preferred Time</Label>
-                    <Input
-                      id="time"
-                      type="time"
-                      value={preferredTime}
-                      onChange={(e) => setPreferredTime(e.target.value)}
-                      required
-                    />
-                  </div>
+                  <Button type="submit" className="w-full mt-2 bg-gradient-primary" disabled={loading}>
+                    {loading ? 'Booking...' : 'Book Session'}
+                  </Button>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Select value={category} onValueChange={(value: any) => setCategory(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="academic">Academic Stress</SelectItem>
-                        <SelectItem value="personal">Personal Issues</SelectItem>
-                        <SelectItem value="career">Career Guidance</SelectItem>
-                        <SelectItem value="mental_health">Mental Health</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Mode</Label>
-                    <Select value={mode} onValueChange={(value: any) => setMode(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="online">Online</SelectItem>
-                        <SelectItem value="in_person">In Person</SelectItem>
-                        <SelectItem value="phone">Phone</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="issue">Issue Description (Optional)</Label>
-                  <Textarea
-                    id="issue"
-                    value={issueDescription}
-                    onChange={(e) => setIssueDescription(e.target.value)}
-                    placeholder="Brief description of what you'd like to discuss..."
-                  />
-                </div>
-
-                <Button type="submit" disabled={loading} className="w-full bg-gradient-primary">
-                  {loading ? "Booking..." : "Book Session"}
-                </Button>
               </form>
             </DialogContent>
           </Dialog>
         </div>
-
-        <div className="grid gap-6">
-          {bookings.length === 0 ? (
-            <Card className="text-center py-12">
-              <CardContent>
-                <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No Sessions Yet</h3>
-                <p className="text-muted-foreground mb-4">Book your first counseling session</p>
-                <Button onClick={() => setIsOpen(true)} className="bg-gradient-primary">
-                  Book Session
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            bookings.map((booking) => (
-              <Card key={booking.id} className="border-primary/20">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <span className="text-lg">{getCategoryIcon(booking.category)}</span>
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          {booking.counselors.name}
-                          {booking.is_anonymous && <Shield className="w-4 h-4 text-muted-foreground" />}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {booking.counselors.specialization.join(", ")}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(booking.status)}`}>
-                      {booking.status}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <span>
-                        {booking.confirmed_date 
-                          ? new Date(booking.confirmed_date).toLocaleDateString()
-                          : new Date(booking.preferred_date).toLocaleDateString()
-                        }
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-primary" />
-                      <span>{booking.confirmed_time || booking.preferred_time}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <span className="px-2 py-1 bg-secondary/20 rounded text-xs">
-                      {booking.category.replace("_", " ")}
-                    </span>
-                    <span className="px-2 py-1 bg-secondary/20 rounded text-xs">
-                      {booking.mode.replace("_", " ")}
-                    </span>
-                  </div>
-
-                  {booking.issue_description && (
+        {bookings.length === 0 ? (
+          <div className="text-center py-12">
+            <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-2 text-sm font-medium text-foreground">No counseling sessions</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Get started by booking a session with one of our counselors.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {bookings.map((booking) => (
+              <Card key={booking.id} className="border-border">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <h4 className="font-medium text-foreground mb-1">Topic</h4>
-                      <p className="text-sm text-muted-foreground">{booking.issue_description}</p>
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">{booking.counselors?.name || 'Campus Counselor'}</h3>
+                        <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                          {getStatusLabel(booking.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">General Counseling</p>
+                      <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
+                        <Calendar className="h-4 w-4 flex-shrink-0" />
+                        <span>{new Date(booking.confirmed_date || booking.preferred_date).toLocaleDateString()}</span>
+                        <span>•</span>
+                        <Clock className="h-4 w-4 flex-shrink-0" />
+                        <span>{booking.confirmed_time || booking.preferred_time}</span>
+                      </div>
                     </div>
-                  )}
-
-                  {booking.meeting_link && (
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <h4 className="font-medium text-primary mb-1">Meeting Link</h4>
-                      <a 
-                        href={booking.meeting_link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
-                      >
-                        Join Session
-                      </a>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => { setEditing(booking); setEditTime(booking.preferred_time); setEditOpen(true); }}>Edit</Button>
+                      <Button variant="destructive" size="sm" onClick={async () => { await supabase.from('counseling_bookings').delete().eq('id', booking.id); setBookings(prev => prev.filter(b => b.id !== booking.id)); }}>Delete</Button>
                     </div>
-                  )}
-
-                  {booking.session_notes && (
-                    <div className="bg-success/10 p-3 rounded-lg">
-                      <h4 className="font-medium text-success mb-1">Session Notes</h4>
-                      <p className="text-sm text-success-foreground">{booking.session_notes}</p>
-                    </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
-      </main>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

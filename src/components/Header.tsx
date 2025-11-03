@@ -1,162 +1,118 @@
-import { useState, useEffect } from "react";
-import { Menu, X, Shield, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import type { User as AuthUser } from "@supabase/supabase-js";
+import { HeartPulse } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { User } from "@supabase/supabase-js";
+import { Button } from "@/components/ui/button";
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [fullName, setFullName] = useState<string>("");
+  const [rollNumber, setRollNumber] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const location = useLocation();
+  const [profileLoadedFor, setProfileLoadedFor] = useState<string | null>(null);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null);
+    });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  // Load profile details for display (name + roll)
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        if (!user?.id) {
+          setFullName("");
+          setRollNumber("");
+          setProfileLoadedFor(null);
+          return;
+        }
+        // Do not query profile while on /auth to avoid flicker and 500 loops
+        if (location.pathname === "/auth") return;
+        // Avoid re-fetching for the same user
+        if (profileLoadedFor === user.id) return;
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, roll_number")
+          .eq("id", user.id)
+          .single();
+        if (!error) {
+          setFullName(data?.full_name || "");
+          setRollNumber(data?.roll_number || "");
+          setProfileLoadedFor(user.id);
+        }
+      } catch {
+        // Swallow errors; header will fallback to email
+      }
+    };
+    loadProfile();
+  }, [user?.id, location.pathname, profileLoadedFor]);
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
-      });
+      toast({ title: "Sign out failed", description: error.message, variant: "destructive" });
     } else {
-      toast({
-        title: "Signed Out",
-        description: "You have been signed out successfully",
-      });
-      navigate("/");
+      toast({ title: "Signed out" });
+      navigate("/auth");
     }
   };
 
-  const navigationItems = [
-    { name: "Dashboard", href: "/dashboard", icon: "🏠" },
-    { name: "Emergency", href: "/emergency", icon: "🚨" },
-    { name: "Appointments", href: "/appointments", icon: "🩺" },
-    { name: "Medicines", href: "/medicines", icon: "💊" },
-    { name: "Counseling", href: "/counseling", icon: "🧠" },
-    { name: "Wheelchairs", href: "/wheelchairs", icon: "♿" },
-    { name: "Wellness", href: "/wellness", icon: "🧘" },
-  ];
-
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-lg border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-gradient-primary rounded-xl shadow-glow">
-              <Heart className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-xl font-bold text-foreground">CampusCare+</h1>
-              <p className="text-xs text-muted-foreground">Campus Wellness Platform</p>
-            </div>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <HeartPulse className="h-6 w-6 text-primary" />
+            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent hidden sm:inline">
+              CampusCarePlus
+            </span>
           </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="text-muted-foreground hover:text-primary transition-smooth font-medium flex items-center gap-2"
-              >
-                <span>{item.icon}</span>
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-muted-foreground">
-                  Welcome, {user.email?.split('@')[0]}
-                </span>
-                <Button variant="ghost" onClick={signOut} className="text-muted-foreground hover:text-primary">
-                  Sign Out
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Link to="/auth">
-                  <Button variant="ghost" className="text-muted-foreground hover:text-primary">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/auth">
-                  <Button className="bg-gradient-primary text-primary-foreground hover:shadow-glow transition-smooth">
-                    Get Started
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-accent transition-smooth"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
         </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
-            <nav className="flex flex-col space-y-4">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="text-muted-foreground hover:text-primary transition-smooth font-medium py-2 flex items-center gap-3"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <span className="text-xl">{item.icon}</span>
-                  {item.name}
-                </Link>
-              ))}
-              <div className="flex flex-col space-y-3 pt-4 border-t border-border">
-                {user ? (
-                  <Button variant="ghost" onClick={signOut} className="justify-start">
-                    Sign Out ({user.email?.split('@')[0]})
-                  </Button>
-                ) : (
-                  <>
-                    <Link to="/auth">
-                      <Button variant="ghost" className="justify-start">
-                        Login
-                      </Button>
-                    </Link>
-                    <Link to="/auth">
-                      <Button className="bg-gradient-primary text-primary-foreground">
-                        Get Started
-                      </Button>
-                    </Link>
-                  </>
+        <div className="flex items-center gap-2">
+          {user ? (
+            <>
+              <div className="hidden sm:flex flex-col items-end leading-tight">
+                <span className="text-sm text-foreground font-medium">
+                  {fullName || user.email?.split("@")[0] || "User"}
+                </span>
+                {(rollNumber || user.email) && (
+                  <span className="text-xs text-muted-foreground">
+                    {rollNumber || user.email}
+                  </span>
                 )}
               </div>
-            </nav>
-          </div>
-        )}
+              <Link to="/sos" className="hidden sm:block">
+                <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                  SOS
+                </Button>
+              </Link>
+              {user?.user_metadata?.role === 'admin' && (
+                <Link to="/admin" className="hidden sm:block">
+                  <Button variant="ghost">Admin</Button>
+                </Link>
+              )}
+              <Button variant="outline" onClick={signOut}>Log out</Button>
+            </>
+          ) : (
+            <Link to="/auth">
+              <Button className="bg-gradient-primary">Sign in</Button>
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );

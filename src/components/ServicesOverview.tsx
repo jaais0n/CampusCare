@@ -6,164 +6,212 @@ import {
   Dumbbell, 
   Brain,
   ArrowRight,
-  Clock,
-  MapPin
+  HeartPulse
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Link } from "react-router-dom";
+
+// Reusable fade-in on scroll wrapper (no external deps)
+const FadeInOnScroll: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisible(true);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={`transform transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+    >
+      {children}
+    </div>
+  );
+};
 
 const ServicesOverview = () => {
   const services = [
-    {
-      icon: Accessibility,
-      title: "Wheelchair & Accessibility",
-      description: "Book wheelchairs and disability assistance with real-time availability tracking",
-      features: ["Real-time booking", "Usage tracking", "Maintenance logs"],
-      status: "Available Now",
-      statusColor: "text-success"
-    },
-    {
-      icon: Pill,
-      title: "Medicine Ordering",
-      description: "Browse and order medicines with campus delivery service",
-      features: ["Online pharmacy", "Prescription tracking", "Campus delivery"],
-      status: "Available Now",
-      statusColor: "text-success"
-    },
+    // First row: Appointments, Counseling, Wheelchairs
     {
       icon: Calendar,
-      title: "Doctor Appointments",
-      description: "Schedule appointments with campus healthcare professionals",
+      title: "Medical Appointment",
+      description: "Book with our campus doctor",
       features: ["Multiple specializations", "Flexible scheduling", "Appointment history"],
       status: "Available Now",
-      statusColor: "text-success"
+      statusColor: "text-success",
+      href: "/appointments",
+      available: true
     },
     {
       icon: MessageCircle,
-      title: "Counseling Services",
+      title: "Counseling",
       description: "Professional counseling with anonymous booking options",
       features: ["Anonymous sessions", "Multiple categories", "Online & in-person"],
       status: "Available Now",
-      statusColor: "text-success"
+      statusColor: "text-success",
+      href: "/counseling",
+      available: true
     },
     {
-      icon: Brain,
-      title: "Wellness Tips & Timer",
-      description: "Guided wellness activities with built-in timer and reminders",
-      features: ["6 wellness categories", "Custom timers", "Daily reminders"],
+      icon: Accessibility,
+      title: "Wheelchairs",
+      description: "Book wheelchairs and accessibility assistance",
+      features: ["Real-time availability", "Campus-wide coverage", "Quick booking"],
       status: "Available Now",
-      statusColor: "text-success"
+      statusColor: "text-success",
+      href: "/wheelchairs",
+      available: true
+    },
+    // Second row: Medicines and Wellness (Coming Soon)
+    {
+      icon: Pill,
+      title: "Medicines",
+      description: "Browse and order medicines with campus delivery service",
+      features: ["Online pharmacy", "Prescription tracking", "Campus delivery"],
+      status: "Coming Soon",
+      statusColor: "text-muted-foreground",
+      href: "/medicines",
+      available: false
     },
     {
-      icon: Dumbbell,
-      title: "Fitness Programs",
-      description: "Join yoga, meditation, and fitness classes with expert trainers",
-      features: ["Group classes", "Personal training", "Progress tracking"],
-      status: "Available Now", 
-      statusColor: "text-success"
+      icon: HeartPulse,
+      title: "Wellness",
+      description: "Access wellness programs and track your health",
+      features: ["Fitness tracking", "Mental health", "Wellness challenges"],
+      status: "Coming Soon",
+      statusColor: "text-muted-foreground",
+      href: "/wellness",
+      available: false
     }
   ];
 
+  // Split into active and coming soon groups for custom layout
+  const primaryServices = services.filter((s) => s.available);
+  const comingSoonServices = services.filter((s) => !s.available);
+
   return (
-    <section className="py-20 px-4">
+    <section id="services" className="py-12 sm:py-16 lg:py-20 px-4 scroll-mt-24">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+        <div className="text-center mb-10 sm:mb-12 lg:mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-4 md:mb-6">
             Complete Wellness
             <span className="bg-gradient-primary bg-clip-text text-transparent"> Ecosystem</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto px-2">
             Seven integrated modules designed to support every aspect of campus wellness, 
             from emergency response to daily health maintenance.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => (
-            <Card 
-              key={index}
-              className="p-6 bg-card border-border hover:border-primary/30 transition-all duration-300 
-                         hover:shadow-glow hover:translate-y-[-4px] group overflow-hidden relative"
-            >
+        {/* Services grid */}
+
+        {/* First row: active services in a 3-column grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          {primaryServices.map((service, index) => (
+            <FadeInOnScroll key={service.title} delay={index * 100}>
+              <Card 
+                className={`h-full min-h-[230px] sm:min-h-[250px] p-4 sm:p-5 lg:p-6 bg-card border-border transition-all duration-300 group overflow-hidden relative ${
+                  service.available ? "hover:border-primary/30 hover:shadow-glow hover:translate-y-[-4px]" : "opacity-60 cursor-not-allowed"
+                } flex flex-col`}
+              >
               {/* Background gradient effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 
                               group-hover:opacity-100 transition-opacity duration-300" />
-              
-              <div className="relative z-10">
+                            <div className="relative z-10 flex flex-col h-full">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-2xl bg-primary/10 group-hover:bg-primary/20 
+                  <div className="p-2 sm:p-3 rounded-2xl bg-primary/10 group-hover:bg-primary/20 
                                   transition-colors duration-300">
-                    <service.icon className="w-7 h-7 text-primary" />
+                    <service.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full bg-success/20 ${service.statusColor}`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${service.available ? "bg-success/20" : "bg-muted/20"} ${service.statusColor}`}>
                     {service.status}
                   </span>
                 </div>
 
-                <h3 className="text-xl font-bold text-foreground mb-3">
+                <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3">
                   {service.title}
                 </h3>
                 
-                <p className="text-muted-foreground mb-4 leading-relaxed">
+                <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
                   {service.description}
                 </p>
 
-                <ul className="space-y-2 mb-6">
-                  {service.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center text-sm text-muted-foreground">
-                      <div className="w-1.5 h-1.5 bg-primary rounded-full mr-3" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <Button 
-                  className="w-full group/button bg-primary/10 text-primary hover:bg-primary 
-                             hover:text-primary-foreground transition-all duration-300"
-                >
-                  Explore Service
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover/button:translate-x-1 transition-transform" />
-                </Button>
+                <div className="mt-auto pt-2">
+                  {service.available ? (
+                    <Link to={service.href} className="w-full">
+                      <Button 
+                        className="w-full group/button bg-primary/10 text-primary hover:bg-primary 
+                                   hover:text-primary-foreground transition-all duration-300"
+                      >
+                        Explore Service
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover/button:translate-x-1 transition-transform" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button 
+                      className="w-full bg-muted text-muted-foreground"
+                      variant="secondary"
+                      disabled
+                      aria-disabled
+                    >
+                      Coming Soon
+                    </Button>
+                  )}
+                </div>
               </div>
-            </Card>
+              </Card>
+            </FadeInOnScroll>
           ))}
         </div>
 
-        {/* Quick Access Section */}
-        <div className="mt-20 bg-card rounded-3xl p-8 border border-border">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-foreground mb-4">Quick Access Dashboard</h3>
-            <p className="text-muted-foreground">
-              Role-based dashboards for students, faculty, and administrators
-            </p>
+        {/* Second row: coming soon services centered */}
+        {comingSoonServices.length > 0 && (
+          <div className="mt-6 sm:mt-8 flex justify-center gap-4 sm:gap-6 lg:gap-8 flex-wrap">
+            {comingSoonServices.map((service, idx) => (
+              <FadeInOnScroll key={service.title} delay={(primaryServices.length + idx) * 100}>
+                <Card className="h-full min-h-[230px] sm:min-h-[250px] p-4 sm:p-5 lg:p-6 bg-card border-border opacity-60 cursor-not-allowed group overflow-hidden relative w-full max-w-[480px] sm:w-[360px] flex flex-col">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative z-10 flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-3 sm:mb-4">
+                      <div className="p-2 sm:p-3 rounded-2xl bg-primary/10">
+                        <service.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full bg-muted/20 ${service.statusColor}`}>{service.status}</span>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3">{service.title}</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">{service.description}</p>
+                    <div className="mt-auto pt-2">
+                      <Button className="w-full bg-muted text-muted-foreground" variant="secondary" disabled aria-disabled>
+                        Coming Soon
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              </FadeInOnScroll>
+            ))}
           </div>
+        )}
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center p-6 rounded-2xl bg-background/50">
-              <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-6 h-6 text-primary" />
-              </div>
-              <h4 className="font-semibold text-foreground mb-2">Student Dashboard</h4>
-              <p className="text-sm text-muted-foreground">Quick booking, health records, wellness tracking</p>
-            </div>
+        
 
-            <div className="text-center p-6 rounded-2xl bg-background/50">
-              <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-6 h-6 text-primary" />
-              </div>
-              <h4 className="font-semibold text-foreground mb-2">Faculty Dashboard</h4>
-              <p className="text-sm text-muted-foreground">Service access, department insights, staff wellness</p>
-            </div>
-
-            <div className="text-center p-6 rounded-2xl bg-background/50">
-              <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <MapPin className="w-6 h-6 text-primary" />
-              </div>
-              <h4 className="font-semibold text-foreground mb-2">Admin Dashboard</h4>
-              <p className="text-sm text-muted-foreground">Full management, analytics, system monitoring</p>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

@@ -8,7 +8,7 @@ import { Heart, Plus, Users, Clock, MapPin, Calendar, Trophy, Star } from "lucid
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import Header from "@/components/Header";
+import { BackBar } from "@/components/BackBar";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface WellnessProgram {
@@ -183,8 +183,7 @@ const Wellness = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Wellness Programs</h1>
@@ -422,7 +421,7 @@ const Wellness = () => {
             </CardContent>
           </Card>
         )}
-      </main>
+      </div>
     </div>
   );
 };

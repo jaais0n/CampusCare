@@ -1,46 +1,17 @@
-import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import ServicesOverview from "@/components/ServicesOverview";
 import SOSEmergency from "@/components/SOSEmergency";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart, Mail, Phone, MapPin } from "lucide-react";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main>
         <HeroSection />
         <ServicesOverview />
         <SOSEmergency />
-        
-        {/* Authentication Notice */}
-        <section className="py-16 px-4 bg-card/30">
-          <div className="max-w-4xl mx-auto text-center">
-            <Card className="p-8 bg-card border-primary/20 shadow-glow">
-              <Heart className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-foreground mb-4">Ready to Get Started?</h2>
-              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                CampusCare+ uses secure authentication and database management to protect your health information. 
-                To enable full functionality including user accounts, appointment booking, and medical records, 
-                we need to connect to our backend services.
-              </p>
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6">
-                <p className="text-sm text-primary">
-                  🔒 <strong>Secure Backend Required:</strong> To store user data, manage appointments, 
-                  and handle medical information, this application requires a secure database connection 
-                  via Supabase integration.
-                </p>
-              </div>
-              <a href="/auth">
-                <Button variant="hero" size="lg">
-                  Get Started - Sign In
-                </Button>
-              </a>
-            </Card>
-          </div>
-        </section>
+
 
         {/* Footer */}
         <footer className="bg-card py-12 px-4 border-t border-border">
@@ -109,7 +80,7 @@ const Index = () => {
             
             <div className="border-t border-border mt-8 pt-8 text-center">
               <p className="text-muted-foreground text-sm">
-                © 2024 CampusCare+. All rights reserved. Built with ❤️ for campus wellness.
+                © 2024 CampusCare+. All rights reserved.
               </p>
             </div>
           </div>
