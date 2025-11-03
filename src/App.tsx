@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
+import MobileNav from "@/components/MobileNav";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Appointments from "./pages/Appointments";
@@ -13,6 +14,7 @@ import Medicines from "./pages/Medicines";
 import Wheelchairs from "./pages/Wheelchairs";
 import Wellness from "./pages/Wellness";
 import Emergency from "./pages/Emergency";
+import SOSPage from "./pages/SOSPage";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminCounseling from "./pages/AdminCounseling";
@@ -51,9 +53,11 @@ const App = () => (
           <Route path="/wheelchairs" element={<Wheelchairs />} />
           <Route path="/wellness" element={<Wellness />} />
           <Route path="/emergency" element={<Emergency />} />
+          <Route path="/sos" element={<SOSPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <MobileNav />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
