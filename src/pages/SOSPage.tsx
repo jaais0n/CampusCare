@@ -8,7 +8,14 @@ import LiveLocationMap from '@/components/LiveLocationMap';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { User as AuthUser } from '@supabase/supabase-js';
-// import { Tables } from '@/types/supabase'; // removed – type not exported
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 
 const EmergencyContact = ({ name, number, icon: Icon }: { name: string; number: string; icon: React.ElementType }) => (
@@ -37,6 +44,7 @@ const SOSPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [showWarningPopup, setShowWarningPopup] = useState(false);
 
   const [isPlayingSound, setIsPlayingSound] = useState(false);
 
@@ -106,9 +114,7 @@ const SOSPage = () => {
 
 
 
-  const handleSendAlert = async () => {
-    console.log("Send alert button clicked");
-    
+  const sendEmergencyAlert = async () => {
     setIsSendingAlert(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -156,7 +162,12 @@ const SOSPage = () => {
       });
     } finally {
       setIsSendingAlert(false);
+      setShowWarningPopup(false); // Close popup after sending alert
     }
+  };
+
+  const handleSendAlertClick = () => {
+    setShowWarningPopup(true);
   };
 
   useEffect(() => {
@@ -175,7 +186,7 @@ const SOSPage = () => {
   }, [isPlayingSound]);
 
   return (
-    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-gray-800 dark:text-white ${isSendingAlert ? 'animate-alert-flash' : ''}`}>
+    <div className={`min-h-screen bg-background flex flex-col items-center justify-center p-4 text-foreground ${isSendingAlert ? 'animate-alert-flash' : ''} ${showWarningPopup ? 'filter blur-sm' : ''}`}>
       {/* Hidden audio element for better browser compatibility */}
       <audio
         ref={alertAudioRef}
@@ -189,28 +200,28 @@ const SOSPage = () => {
       <div className="text-center mb-8">
         <AlertTriangle
           size={64}
-          className={`mx-auto mb-4 ${isSendingAlert ? 'text-black' : 'text-red-600 dark:text-red-400'} filter animate-[pulse_1.6s_ease-in-out_infinite] ${isSendingAlert ? 'drop-shadow-[0_0_24px_rgba(0,0,0,0.9)] scale-105' : 'drop-shadow-[0_0_12px_rgba(239,68,68,0.6)]'}`}
+          className={`mx-auto mb-4 ${isSendingAlert ? 'text-foreground' : 'text-red-600 dark:text-red-400'} filter animate-[pulse_1.6s_ease-in-out_infinite] ${isSendingAlert ? 'drop-shadow-[0_0_24px_rgba(0,0,0,0.9)] scale-105' : 'drop-shadow-[0_0_12px_rgba(239,68,68,0.6)]'}`}
         />
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Emergency SOS</h1>
+        <h1 className="text-4xl font-bold text-foreground">Emergency SOS</h1>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md text-center border border-gray-200 dark:border-gray-700">
+      <div className="bg-card p-8 rounded-lg shadow-xl w-full max-w-md text-center border border-border">
         {user ? (
           <div className="space-y-4">
-            <p className="text-lg text-gray-700 dark:text-gray-300">
+            <p className="text-lg text-muted-foreground">
             <span className="font-semibold">Name:</span> {user.user_metadata.full_name?.toUpperCase() || 'N/A'}
           </p>
           {user.user_metadata.roll_number && (
-            <p className="text-lg text-gray-700 dark:text-gray-300">
+            <p className="text-lg text-muted-foreground">
               <span className="font-semibold">Roll Number:</span> {user.user_metadata.roll_number}
             </p>
           )}
-          <p className="text-lg text-gray-700 dark:text-gray-300">
+          <p className="text-lg text-muted-foreground">
             <span className="font-semibold">Email:</span> {user.email}
           </p>
         </div>
       ) : (
-        <p className="text-lg text-gray-700 dark:text-gray-300">Loading user details...</p>
+        <p className="text-lg text-muted-foreground">Loading user details...</p>
       )}
 
       {locationError && (
@@ -231,10 +242,10 @@ const SOSPage = () => {
       {/* Loading state */}
       {!location && !locationError && (
         <div className="mt-6 w-full max-w-md">
-          <div className="w-full h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+          <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-2"></div>
-              <p className="text-gray-600 dark:text-gray-400">Getting your location...</p>
+              <p className="text-muted-foreground">Getting your location...</p>
             </div>
           </div>
         </div>
@@ -250,20 +261,17 @@ const SOSPage = () => {
         </div>
       )}
 
-      <p className="text-base mt-6 mb-4 text-gray-600 dark:text-gray-400">
-        Press the button below to alert campus security and emergency services
+      <p className="text-sm text-center">
+        Press the button below to alert campus security and emergency
+        services
       </p>
 
-      {/* Warning Message */}
-      <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg mb-4 text-sm text-center font-medium">
-        <p className="font-bold">WARNING:</p>
-        <p>This button is for EMERGENCIES ONLY. Misuse will result in a ₹5000 fine.</p>
-      </div>
+
 
       <Button
-        onClick={handleSendAlert}
+        onClick={handleSendAlertClick}
         disabled={isSendingAlert}
-        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-xl transition duration-300 ease-in-out transform hover:scale-105"
+        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-xl transition duration-300 ease-in-out transform hover:scale-105 mt-4"
       >
           {isSendingAlert ? (
             <span className="flex items-center justify-center">
@@ -275,8 +283,29 @@ const SOSPage = () => {
           )}
         </Button>
       </div>
+
+      <Dialog open={showWarningPopup} onOpenChange={setShowWarningPopup}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Emergency Alert</DialogTitle>
+            <DialogDescription>
+              This button is for EMERGENCIES ONLY. Misuse will result in a ₹5000 fine.
+              Are you sure you want to send an emergency alert?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWarningPopup(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={sendEmergencyAlert}>Confirm Alert</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 export default SOSPage;
+
+
+
+
+

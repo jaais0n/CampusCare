@@ -54,27 +54,29 @@ const MobileNav = () => {
   return (
     <>
       {/* SOS Floating Button */}
-      <div className="fixed bottom-20 right-4 z-50">
-        <Link to="/sos" className="block">
-          <div className="relative">
-            {/* Pulsing ring effect */}
-            <div className="absolute -inset-1 bg-red-500/30 rounded-full animate-ping-slow" />
-            <div className="absolute -inset-2 bg-red-500/20 rounded-full animate-ping-slow animation-delay-1000" />
-            
-            {/* Main SOS button */}
-            <Button 
-              variant="destructive" 
-              size="lg" 
-              className="relative rounded-full h-16 w-16 p-0 shadow-xl hover:scale-105 transform transition-transform duration-200"
-            >
-              <div className="flex flex-col items-center">
-                <AlertTriangle className="h-6 w-6 mb-0.5" />
-                <span className="text-xs font-bold tracking-wider">SOS</span>
-              </div>
-            </Button>
-          </div>
-        </Link>
-      </div>
+      {location.pathname !== "/sos" && (
+        <div className="fixed bottom-20 right-4 z-50">
+          <Link to="/sos" className="block">
+            <div className="relative">
+              {/* Pulsing ring effect */}
+              <div className="absolute -inset-1 bg-red-500/30 rounded-full animate-ping-slow" />
+              <div className="absolute -inset-2 bg-red-500/20 rounded-full animate-ping-slow animation-delay-1000" />
+              
+              {/* Main SOS button */}
+              <Button 
+                variant="destructive" 
+                size="lg" 
+                className="relative rounded-full h-16 w-16 p-0 shadow-xl hover:scale-105 transform transition-transform duration-200"
+              >
+                <div className="flex flex-col items-center">
+                  <AlertTriangle className="h-6 w-6 mb-0.5" />
+                  <span className="text-xs font-bold tracking-wider">SOS</span>
+                </div>
+              </Button>
+            </div>
+          </Link>
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 sm:hidden">

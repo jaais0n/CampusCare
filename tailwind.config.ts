@@ -127,7 +127,7 @@ export default {
         "slide-up": "slideUp 0.4s ease-out",
         "sos-glow": "sos-glow 1.5s infinite alternate",
         "icon-glow": "icon-glow 1.5s infinite alternate",
-        "alert-flash": "alert-flash 1s ease-in-out infinite",
+        "alert-flash": "alert-flash 0.5s ease-in-out infinite",
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
@@ -143,3 +143,6 @@ export default {
   },
   plugins: [require("tailwindcss-animate")]
 } satisfies Config;
+
+
+
