@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Loader2, Phone, MapPin } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Card } from '@/components/ui/card';
-import { AuthUser } from '@/types/auth';
-import { Tables } from '@/types/supabase';
+import { User as AuthUser } from '@supabase/supabase-js';
+// import { Tables } from '@/types/supabase'; // removed – type not exported
+
 
 const EmergencyContact = ({ name, number, icon: Icon }: { name: string; number: string; icon: React.ElementType }) => (
   <a 
@@ -46,7 +47,7 @@ async function checkTableExists(tableName: string): Promise<boolean> {
   }
 }
 
-export default function SOSPage() {
+const SOSPage = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isSendingAlert, setIsSendingAlert] = useState(false);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -54,6 +55,7 @@ export default function SOSPage() {
   const [emergencyContacts, setEmergencyContacts] = useState<any[]>([]); // Replace 'any' with actual type
   const { toast } = useToast();
   const navigate = useNavigate();
+  const alertAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const getSession = async () => {
@@ -99,7 +101,30 @@ export default function SOSPage() {
     getCurrentLocation();
   }, []);
 
+
+
+
+
   const handleSendAlert = async () => {
+    console.log("Send alert button clicked");
+    
+    // Play audio fully once when button is clicked
+    if (alertAudioRef.current) {
+      try {
+        console.log("Playing audio fully once...");
+        alertAudioRef.current.currentTime = 0;
+        await alertAudioRef.current.play();
+        console.log("Audio started playing");
+        
+        // Listen for when audio ends
+        alertAudioRef.current.addEventListener('ended', () => {
+          console.log("Audio finished playing");
+        });
+      } catch (error) {
+        console.log("Audio play failed:", error);
+      }
+    }
+    
     setIsSendingAlert(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -144,6 +169,15 @@ export default function SOSPage() {
 
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-gray-800 dark:text-white ${isSendingAlert ? 'animate-alert-flash' : ''}`}>
+      {/* Hidden audio element for better browser compatibility */}
+      <audio
+        ref={alertAudioRef}
+        src="/Alertsound.mp3"
+        preload="auto"
+        volume="1.0"
+        style={{ display: 'none' }}
+      />
+      
       <div className="text-center mb-8">
         <AlertTriangle
           size={64}
@@ -204,3 +238,5 @@ export default function SOSPage() {
     </div>
   );
 }
+
+export default SOSPage;
