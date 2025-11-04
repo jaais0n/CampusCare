@@ -120,6 +120,8 @@ const ServicesOverview = () => {
 
   // Split into active and coming soon groups for custom layout
   const primaryServices = services.filter((s) => s.available);
+  const firstRowServices = primaryServices.slice(0, 3);
+  const secondRowServices = primaryServices.slice(3);
   const comingSoonServices = services.filter((s) => !s.available);
 
   return (
@@ -140,7 +142,7 @@ const ServicesOverview = () => {
 
         {/* First row: active services in a 3-column grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-          {primaryServices.map((service, index) => (
+          {firstRowServices.map((service, index) => (
             <FadeInOnScroll key={service.title} delay={index * 100}>
               <Card 
                 className={`h-full min-h-[230px] sm:min-h-[250px] p-4 sm:p-5 lg:p-6 bg-card border-border transition-all duration-300 group overflow-hidden relative ${
@@ -195,6 +197,66 @@ const ServicesOverview = () => {
             </FadeInOnScroll>
           ))}
         </div>
+
+        {/* Second row: remaining active services centered */}
+        {secondRowServices.length > 0 && (
+          <div className="mt-6 sm:mt-8 flex justify-center gap-4 sm:gap-6 lg:gap-8 flex-wrap">
+            {secondRowServices.map((service, idx) => (
+              <FadeInOnScroll key={service.title} delay={(firstRowServices.length + idx) * 100}>
+                <Card 
+                  className={`h-full min-h-[230px] sm:min-h-[250px] p-4 sm:p-5 lg:p-6 bg-card border-border transition-all duration-300 group overflow-hidden relative w-full max-w-[480px] sm:w-[360px] flex flex-col ${
+                    service.available ? "hover:border-primary/30 hover:shadow-glow hover:translate-y-[-4px]" : "opacity-60 cursor-not-allowed"
+                  }`}
+                >
+                  {/* Background gradient effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 
+                                  group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="relative z-10 flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="p-2 sm:p-3 rounded-2xl bg-primary/10 group-hover:bg-primary/20 
+                                      transition-colors duration-300">
+                        <service.icon className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${service.available ? "bg-success/20" : "bg-muted/20"} ${service.statusColor}`}>
+                        {service.status}
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 sm:mb-3">
+                      {service.title}
+                    </h3>
+                    
+                    <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
+                      {service.description}
+                    </p>
+
+                    <div className="mt-auto pt-2">
+                      {service.available ? (
+                        <Button
+                          onClick={() => handleExplore(service)}
+                          className="w-full group/button bg-primary/10 text-primary hover:bg-primary 
+                                     hover:text-primary-foreground transition-all duration-300"
+                        >
+                          Explore Service
+                          <ArrowRight className="w-4 h-4 ml-2 group-hover/button:translate-x-1 transition-transform" />
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="w-full bg-muted text-muted-foreground"
+                          variant="secondary"
+                          disabled
+                          aria-disabled
+                        >
+                          Coming Soon
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              </FadeInOnScroll>
+            ))}
+          </div>
+        )}
 
         {/* Second row: coming soon services centered */}
         {comingSoonServices.length > 0 && (

@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Phone, MapPin, Clock, AlertCircle, Shield, HeartPulse } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, Loader2, Phone, MapPin } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { Card } from '@/components/ui/card';
+import { AuthUser } from '@/types/auth';
+import { Tables } from '@/types/supabase';
 
 const EmergencyContact = ({ name, number, icon: Icon }: { name: string; number: string; icon: React.ElementType }) => (
   <a 
@@ -45,86 +47,76 @@ async function checkTableExists(tableName: string): Promise<boolean> {
 }
 
 export default function SOSPage() {
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isSendingAlert, setIsSendingAlert] = useState(false);
-  const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [userProfile, setUserProfile] = useState<{full_name?: string; roll_number?: string} | null>(null);
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [emergencyContacts, setEmergencyContacts] = useState<any[]>([]); // Replace 'any' with actual type
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is authenticated and fetch profile
-    const checkAuthAndFetchProfile = async () => {
+    const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Fetch user profile only if a session exists
-        try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('full_name, roll_number')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (!error && profile) {
-            setUserProfile({
-              full_name: profile.full_name || session.user.email?.split('@')[0] || 'User',
-              roll_number: profile.roll_number || ''
-            });
-          } else {
-            setUserProfile({
-              full_name: session.user.email?.split('@')[0] || 'User',
-              roll_number: ''
-            });
-          }
-        } catch (err) {
-          console.error('Error fetching profile:', err);
-          setUserProfile({
-            full_name: session.user.email?.split('@')[0] || 'User',
-            roll_number: ''
-          });
-        }
-      }
+      console.log('Supabase Session:', session); // Add this line
+      setUser(session?.user || null);
     };
-    
-    checkAuthAndFetchProfile();
-    getCurrentLocation();
-  }, [navigate, toast]);
+
+    getSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
           });
         },
         (error) => {
           console.error("Error getting location:", error);
+          setLocationError("Could not access your location. Please enable location services.");
           toast({
             title: "Location Error",
             description: "Could not access your location. Please enable location services.",
-            variant: "destructive"
+            variant: "destructive",
           });
         }
       );
     }
   };
 
-  const handleEmergencyAlert = async () => {
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  const handleSendAlert = async () => {
     setIsSendingAlert(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User not authenticated.");
+      }
+
       const alertData = {
-        user_id: user?.id ?? null,
-        user_name: userProfile?.full_name ?? 'Anonymous User',
-        user_type: user ? 'student' : 'anonymous',
+        user_id: user.id,
+        user_name: user.user_metadata.full_name || user.email || 'Anonymous',
+        user_type: user.user_metadata.role || 'unknown',
         status: 'active',
-        location: location ? `https://www.google.com/maps?q=${location.lat},${location.lng}` : 'Location not available',
-        additional_info: JSON.stringify({
-          email: user?.email ?? 'N/A',
-          roll_number: userProfile?.roll_number ?? 'N/A',
-          note: user ? 'Alert from a registered user.' : 'Alert from an anonymous user.'
-        })
+        location: location ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}` : 'Location not available',
+        additional_info: {
+          email: user.email,
+          // Removed profile-specific fields
+        },
       };
 
       const tableAvailable = await checkTableExists('emergency_alerts');
@@ -132,7 +124,6 @@ export default function SOSPage() {
         throw new Error('Emergency system is not properly configured. Please contact support.');
       }
 
-      // @ts-ignore
       const { error } = await supabase.from('emergency_alerts').insert([alertData]);
       if (error) throw error;
 
@@ -144,7 +135,7 @@ export default function SOSPage() {
       toast({
         title: "Error Sending Alert",
         description: error.message || "Please try again or call emergency services directly.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsSendingAlert(false);
@@ -152,122 +143,63 @@ export default function SOSPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Emergency Alert Section */}
-      <div className="bg-gradient-to-b from-red-600 to-red-700 text-white py-12 px-4 text-center">
-        <div className="max-w-2xl mx-auto">
-          <div className="mx-auto w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="h-8 w-8" />
-          </div>
-          <h1 className="text-3xl font-bold mb-2">Emergency SOS</h1>
-          {userProfile && (
-            <div className="bg-white/10 rounded-lg p-3 mb-4 text-left">
-              <div className="flex items-center gap-2 text-sm mb-1">
-                <span className="font-medium">Name:</span>
-                <span>{userProfile.full_name}</span>
-              </div>
-              {userProfile.roll_number && (
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium">Roll No:</span>
-                  <span>{userProfile.roll_number}</span>
-                </div>
-              )}
-            </div>
-          )}
-          <p className="text-red-100 mb-6">
-            Press the button below to alert campus security and emergency services
-          </p>
-          
-          <Button
-            onClick={handleEmergencyAlert}
-            disabled={isSendingAlert}
-            className={`w-full max-w-xs h-16 text-lg font-bold bg-white text-red-600 hover:bg-red-50 transition-all ${
-              isSendingAlert ? 'opacity-70' : 'hover:scale-105'
-            }`}
-          >
-            {isSendingAlert ? (
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                Sending Alert...
-              </div>
-            ) : (
-              'SEND EMERGENCY ALERT'
-            )}
-          </Button>
-        </div>
+    <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-gray-800 dark:text-white ${isSendingAlert ? 'animate-alert-flash' : ''}`}>
+      <div className="text-center mb-8">
+        <AlertTriangle
+          size={64}
+          className={`mx-auto mb-4 ${isSendingAlert ? 'text-black' : 'text-red-600 dark:text-red-400'} filter animate-[pulse_1.6s_ease-in-out_infinite] ${isSendingAlert ? 'drop-shadow-[0_0_24px_rgba(0,0,0,0.9)] scale-105' : 'drop-shadow-[0_0_12px_rgba(239,68,68,0.6)]'}`}
+        />
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Emergency SOS</h1>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Emergency Contacts */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Phone className="h-5 w-5 text-red-600" />
-            Emergency Contacts
-          </h2>
-          <div className="space-y-3">
-            <EmergencyContact 
-              name="Campus Security" 
-              number="+911234567890" 
-              icon={Shield} 
-            />
-            <EmergencyContact 
-              name="Medical Emergency" 
-              number="+911234567891" 
-              icon={HeartPulse} 
-            />
-            <EmergencyContact 
-              name="Local Police" 
-              number="100" 
-              icon={AlertCircle} 
-            />
-          </div>
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md text-center border border-gray-200 dark:border-gray-700">
+        {user ? (
+          <div className="space-y-4">
+            <p className="text-lg text-gray-700 dark:text-gray-300">
+            <span className="font-semibold">Name:</span> {user.user_metadata.full_name?.toUpperCase() || 'N/A'}
+          </p>
+          {user.user_metadata.roll_number && (
+            <p className="text-lg text-gray-700 dark:text-gray-300">
+              <span className="font-semibold">Roll Number:</span> {user.user_metadata.roll_number}
+            </p>
+          )}
+          <p className="text-lg text-gray-700 dark:text-gray-300">
+            <span className="font-semibold">Email:</span> {user.email}
+          </p>
         </div>
+      ) : (
+        <p className="text-lg text-gray-700 dark:text-gray-300">Loading user details...</p>
+      )}
 
-        {/* Location Status */}
-        <Card className="p-4 mb-8">
-          <div className="flex items-start gap-3">
-            <MapPin className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
-              location ? 'text-green-500' : 'text-yellow-500'
-            }`} />
-            <div>
-              <h3 className="font-medium mb-1">
-                {location ? 'Your location is being shared' : 'Location access needed'}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {location 
-                  ? `Approximate location: ${location.lat?.toFixed(4) || 'N/A'}, ${location.lng?.toFixed(4) || 'N/A'}`
-                  : 'Enable location services to share your location with emergency contacts.'
-                }
-              </p>
-            </div>
-          </div>
-        </Card>
+      {locationError && (
+        <p className="text-red-500 mt-4">Location Error: {locationError}</p>
+      )}
 
-        {/* Emergency Instructions */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-500" />
-            In Case of Emergency
-          </h2>
-          <ul className="space-y-2 text-muted-foreground">
-            <li className="flex gap-2">
-              <span className="text-foreground font-medium">1.</span>
-              Stay calm and press the emergency button above
-            </li>
-            <li className="flex gap-2">
-              <span className="text-foreground font-medium">2.</span>
-              Provide your name and location to the operator
-            </li>
-            <li className="flex gap-2">
-              <span className="text-foreground font-medium">3.</span>
-              Follow the instructions provided by emergency services
-            </li>
-            <li className="flex gap-2">
-              <span className="text-foreground font-medium">4.</span>
-              Stay on the line until help arrives
-            </li>
-          </ul>
-        </div>
+      {location && (
+        <p className="text-base mt-4 flex items-center justify-center text-gray-600 dark:text-gray-400">
+          <MapPin size={18} className="mr-2" />
+          Location: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+        </p>
+      )}
+
+      <p className="text-base mt-6 mb-4 text-gray-600 dark:text-gray-400">
+        Press the button below to alert campus security and emergency services
+      </p>
+
+      <Button
+        onClick={handleSendAlert}
+        disabled={isSendingAlert}
+        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-xl transition duration-300 ease-in-out transform hover:scale-105"
+      >
+          {isSendingAlert ? (
+            <span className="flex items-center justify-center">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Sending Alert...
+            </span>
+          ) : (
+            "Send Emergency Alert"
+          )}
+        </Button>
       </div>
     </div>
   );

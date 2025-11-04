@@ -71,8 +71,6 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Pure auth only (demo bypass removed)
-
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -85,18 +83,47 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
-      // Successful sign-in: route by role (metadata or admin email)
       const { data: { session } } = await supabase.auth.getSession();
-      let role: string | undefined = (session?.user?.user_metadata as any)?.role;
-      toast({ title: "Welcome back!" });
-      const r = (role || '').toLowerCase();
-      if (r === 'admin') {
-        window.location.replace('/admin');
-        return;
-      } else {
-        const em = session?.user?.email?.toLowerCase();
-        window.location.replace(em === 'admin@university.edu' ? '/admin' : '/');
-        return;
+      if (session?.user) {
+        console.log('Signed In User:', session.user);
+        // Check if profile exists, if not, create a basic one
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .single();
+    
+        if (profileError && profileError.code === 'PGRST116') { // No rows found
+          console.log('No profile found for user, creating one.');
+          const { error: upsertError } = await supabase.from('profiles').upsert({
+            user_id: session.user.id,
+            full_name: session.user.email?.split('@')[0] || 'New User',
+            email: session.user.email,
+            role: 'student', // Default role
+          });
+          if (upsertError) {
+            console.error('Error creating profile on sign-in:', upsertError);
+            toast({ title: "Profile Creation Failed", description: upsertError.message, variant: "destructive" });
+          } else {
+            console.log('Profile successfully created on sign-in.');
+          }
+        } else if (profileError) {
+          console.error('Error checking profile on sign-in:', profileError);
+        } else {
+          console.log('Profile already exists for user.', profileData);
+        }
+
+        let role: string | undefined = (session.user.user_metadata as any)?.role;
+        toast({ title: "Welcome back!" });
+        const r = (role || '').toLowerCase();
+        if (r === 'admin') {
+          window.location.replace('/admin');
+          return;
+        } else {
+          const em = session.user.email?.toLowerCase();
+          window.location.replace(em === 'admin@university.edu' ? '/admin' : '/');
+          return;
+        }
       }
     }
     setLoading(false);

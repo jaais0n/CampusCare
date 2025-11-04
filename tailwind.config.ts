@@ -99,6 +99,40 @@ export default {
         "sos-pulse": "sos-pulse 2s infinite",
         "fade-in": "fadeIn 0.5s ease-out",
         "slide-up": "slideUp 0.4s ease-out",
+        "sos-glow": "sos-glow 1.5s infinite alternate",
+        "icon-glow": "icon-glow 1.5s infinite alternate",
+        "alert-flash": "alert-flash 1s ease-in-out infinite",
+      },
+      keyframes: {
+        "sos-glow": {
+          "0%": {
+            "box-shadow": "0 0 5px rgba(255, 0, 0, 0.4)",
+            "background-color": "rgba(255, 0, 0, 0.8)",
+          },
+          "100%": {
+            "box-shadow": "0 0 20px rgba(255, 0, 0, 0.8)",
+            "background-color": "rgba(255, 0, 0, 1)",
+          },
+        },
+        "icon-glow": {
+          "0%": {
+            "filter": "drop-shadow(0 0 2px rgba(255, 0, 0, 0.7))",
+          },
+          "100%": {
+            "filter": "drop-shadow(0 0 8px rgba(255, 0, 0, 1))",
+          },
+        },
+        "alert-flash": {
+          "0%": {
+            "background-color": "#f9fafb",
+          },
+          "50%": {
+            "background-color": "rgba(239, 68, 68, 0.12)",
+          },
+          "100%": {
+            "background-color": "#f9fafb",
+          },
+        },
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
