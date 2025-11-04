@@ -41,12 +41,15 @@ const MobileNav = () => {
     };
   }, []);
 
-  if (!user) return null;
-
-  const navItems = [
-    { name: 'Home', path: '/', icon: Home },
-    { name: 'Profile', path: '/profile', icon: User },
-  ];
+  const navItems = user
+    ? [
+        { name: 'Home', path: '/', icon: Home },
+        { name: 'Profile', path: '/profile', icon: User },
+      ]
+    : [
+        { name: 'Home', path: '/', icon: Home },
+        { name: 'Sign In', path: '/auth', icon: LogIn },
+      ];
 
   return (
     <>
@@ -91,19 +94,7 @@ const MobileNav = () => {
             </Link>
           ))}
           
-          {!user ? (
-            <Link
-              to="/auth"
-              className={cn(
-                "flex flex-col items-center justify-center flex-1 h-full",
-                "text-muted-foreground hover:text-foreground transition-colors",
-                location.pathname === '/auth' && "text-primary"
-              )}
-            >
-              <LogIn className="h-5 w-5" />
-              <span className="text-xs mt-1">Sign In</span>
-            </Link>
-          ) : null}
+
         </div>
       </nav>
     </>

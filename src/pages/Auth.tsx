@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate, Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,19 @@ const Auth = () => {
   
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.message) {
+      toast({
+        title: "Authentication Required",
+        description: location.state.message,
+        variant: "destructive",
+      });
+      // Clear the state to prevent the toast from re-appearing on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate, toast]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

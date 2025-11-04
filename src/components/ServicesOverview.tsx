@@ -11,7 +11,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 // Reusable fade-in on scroll wrapper (no external deps)
 const FadeInOnScroll: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => {
@@ -48,6 +49,20 @@ const FadeInOnScroll: React.FC<{ children: React.ReactNode; delay?: number }> = 
 };
 
 const ServicesOverview = () => {
+  const navigate = useNavigate();
+
+  const handleExplore = async (service: { title: string; href: string }) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth", { state: { message: `You must be logged in to access ${service.title}.` } });
+        return;
+      }
+      navigate(service.href);
+    } catch (_e) {
+      navigate(service.href);
+    }
+  };
   const services = [
     // First row: Appointments, Counseling, Wheelchairs
     {
@@ -86,20 +101,20 @@ const ServicesOverview = () => {
       title: "Medicines",
       description: "Browse and order medicines with campus delivery service",
       features: ["Online pharmacy", "Prescription tracking", "Campus delivery"],
-      status: "Coming Soon",
-      statusColor: "text-muted-foreground",
+      status: "Available Now",
+      statusColor: "text-success",
       href: "/medicines",
-      available: false
+      available: true
     },
     {
       icon: HeartPulse,
       title: "Wellness",
       description: "Access wellness programs and track your health",
       features: ["Fitness tracking", "Mental health", "Wellness challenges"],
-      status: "Coming Soon",
-      statusColor: "text-muted-foreground",
+      status: "Available Now",
+      statusColor: "text-success",
       href: "/wellness",
-      available: false
+      available: true
     }
   ];
 
@@ -156,15 +171,14 @@ const ServicesOverview = () => {
 
                 <div className="mt-auto pt-2">
                   {service.available ? (
-                    <Link to={service.href} className="w-full">
-                      <Button 
-                        className="w-full group/button bg-primary/10 text-primary hover:bg-primary 
-                                   hover:text-primary-foreground transition-all duration-300"
-                      >
-                        Explore Service
-                        <ArrowRight className="w-4 h-4 ml-2 group-hover/button:translate-x-1 transition-transform" />
-                      </Button>
-                    </Link>
+                    <Button
+                      onClick={() => handleExplore(service)}
+                      className="w-full group/button bg-primary/10 text-primary hover:bg-primary 
+                                 hover:text-primary-foreground transition-all duration-300"
+                    >
+                      Explore Service
+                      <ArrowRight className="w-4 h-4 ml-2 group-hover/button:translate-x-1 transition-transform" />
+                    </Button>
                   ) : (
                     <Button 
                       className="w-full bg-muted text-muted-foreground"

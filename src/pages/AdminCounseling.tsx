@@ -96,7 +96,7 @@ const AdminCounseling = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         <BackBar label="Back to Admin" to="/admin" />
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Counseling Bookings</h1>
             <p className="text-muted-foreground">Manage all counseling sessions</p>
@@ -135,7 +135,7 @@ const AdminCounseling = () => {
             {bookings.map((booking) => (
               <Card key={booking.id}>
                 <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="space-y-2">
                       <p className="font-medium">
                         Student: {booking.student_name || (booking.user_id ? booking.user_id.slice(0,8) + '…' : '—')}
@@ -150,7 +150,7 @@ const AdminCounseling = () => {
                         {new Date(booking.preferred_date).toLocaleDateString()} • {booking.preferred_time}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${statusClass(booking.status)}`}>
                         {booking.status}
                       </span>

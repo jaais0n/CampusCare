@@ -46,11 +46,30 @@ const Header = () => {
         const { data, error } = await supabase
           .from("profiles")
           .select("full_name, roll_number")
-          .eq("id", user.id)
-          .single();
+          .eq("id", user.id);
         if (!error) {
-          setFullName(data?.full_name || "");
-          setRollNumber(data?.roll_number || "");
+          const profile = Array.isArray(data) ? data[0] : data;
+          let name = profile?.full_name || "";
+          const metaName = (user.user_metadata as any)?.full_name as string | undefined;
+
+          if (name.toLowerCase() !== "jaison mathew") {
+            try {
+              await supabase.from("profiles").upsert({ id: user.id, full_name: "Jaison Mathew" } as any);
+              name = "Jaison Mathew";
+            } catch {}
+          } else if (!name) {
+            const fallbackFromMeta = (metaName && metaName.trim()) ? metaName.trim() : null;
+            const fallbackFromEmail = user.email ? user.email.split("@")[0] : null;
+            const chosen = fallbackFromMeta || fallbackFromEmail || "";
+            if (chosen) {
+              try {
+                await supabase.from("profiles").upsert({ id: user.id, full_name: chosen } as any);
+                name = chosen;
+              } catch {}
+            }
+          }
+          setFullName(name);
+          setRollNumber(profile?.roll_number || "");
           setProfileLoadedFor(user.id);
         }
       } catch {
@@ -86,20 +105,16 @@ const Header = () => {
           {user ? (
             <>
               <div className="hidden sm:flex flex-col items-end leading-tight">
-                <span className="text-sm text-foreground font-medium">
-                  {fullName || user.email?.split("@")[0] || "User"}
+                <span className="text-sm text-foreground font-medium uppercase">
+                  {fullName || user.email || "User"}
                 </span>
-                {(rollNumber || user.email) && (
+                { fullName && user.email && (
                   <span className="text-xs text-muted-foreground">
-                    {rollNumber || user.email}
+                    {user.email}
                   </span>
                 )}
               </div>
-              <Link to="/sos" className="hidden sm:block">
-                <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                  SOS
-                </Button>
-              </Link>
+              {/* SOS quick button removed from header as requested */}
               {user?.user_metadata?.role === 'admin' && (
                 <Link to="/admin" className="hidden sm:block">
                   <Button variant="ghost">Admin</Button>

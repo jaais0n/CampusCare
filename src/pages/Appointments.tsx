@@ -305,14 +305,14 @@ const Appointments = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         <BackBar label="Back" to="/" />
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold">Medical Appointment</h1>
             <p className="text-sm text-gray-500">Book with our campus doctor</p>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-primary">
+              <Button className="w-full sm:w-auto bg-gradient-primary">
                 <Plus className="w-4 h-4 mr-2" />
                 New Appointment
               </Button>
@@ -359,8 +359,8 @@ const Appointments = () => {
             appointments.map((appointment) => (
               <Card key={appointment.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="flex items-center space-x-3 flex-grow">
                       <div className="p-2 bg-blue-50 rounded-lg">
                         <Stethoscope className="h-5 w-5 text-blue-600" />
                       </div>
@@ -381,7 +381,7 @@ const Appointments = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-4 sm:mt-0 flex-shrink-0">
                       <Button variant="outline" size="sm" onClick={() => openEdit(appointment)}>
                         <Pencil className="w-4 h-4 mr-1" /> Edit
                       </Button>

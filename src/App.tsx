@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import Header from "@/components/Header";
 import MobileNav from "@/components/MobileNav";
 import Index from "./pages/Index";
@@ -13,7 +13,6 @@ import Counseling from "./pages/Counseling";
 import Medicines from "./pages/Medicines";
 import Wheelchairs from "./pages/Wheelchairs";
 import Wellness from "./pages/Wellness";
-import Emergency from "./pages/Emergency";
 import SOSPage from "./pages/SOSPage";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
@@ -52,7 +51,7 @@ const App = () => (
           <Route path="/medicines" element={<Medicines />} />
           <Route path="/wheelchairs" element={<Wheelchairs />} />
           <Route path="/wellness" element={<Wellness />} />
-          <Route path="/emergency" element={<Emergency />} />
+          <Route path="/emergency" element={<Navigate to="/sos" replace />} />
           <Route path="/sos" element={<SOSPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

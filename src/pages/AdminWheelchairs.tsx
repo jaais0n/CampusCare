@@ -286,13 +286,13 @@ const AdminWheelchairs = () => {
               return (
                 <Card key={booking.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                       <div className="flex items-center space-x-3">
                         <div className="p-2 bg-blue-50 rounded-lg">
                           <Activity className="h-5 w-5 text-blue-600" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
                             <h3 className="font-medium">Standard Manual Wheelchair</h3>
                             <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${statusClass(uiStatus)}`}>
                               {uiStatus}
@@ -343,7 +343,7 @@ const AdminWheelchairs = () => {
                       </div>
                       
                       {/* Admin Actions */}
-                      <div className="flex flex-col gap-2 ml-4">
+                      <div className="flex flex-col gap-2 mt-4 md:mt-0 md:ml-4">
                         <div className="min-w-[140px]">
                           <Select 
                             value={uiStatus} 

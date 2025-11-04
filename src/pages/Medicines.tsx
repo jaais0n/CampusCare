@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,6 +50,7 @@ interface Order {
 }
 
 const Medicines = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -58,184 +60,104 @@ const Medicines = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
   
-  // Checkout form
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
+    const checkSessionAndFetchData = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        navigate("/auth", { state: { message: "You must be logged in to access the pharmacy." } });
+        return;
       }
-    );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      setUser(session.user);
+      fetchMedicines();
+      fetchCartItems(session.user);
+      fetchOrders(session.user);
+    };
+
+    checkSessionAndFetchData();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate("/auth", { state: { message: "Your session has expired. Please log in again." } });
+      } else {
+        setUser(session.user);
+      }
     });
 
-    fetchMedicines();
-    if (user) {
-      fetchCartItems();
-      fetchOrders();
-    }
-
     return () => subscription.unsubscribe();
-  }, [user]);
+  }, [navigate]);
 
   const fetchMedicines = async () => {
-    const { data, error } = await supabase
-      .from("medicines")
-      .select("*")
-      .order("name");
-    
+    const { data, error } = await supabase.from("medicines").select("*").order("name");
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch medicines",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to fetch medicines", variant: "destructive" });
     } else {
       setMedicines(data || []);
     }
   };
 
-  const fetchCartItems = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from("cart_items")
-      .select(`
-        *,
-        medicines (*)
-      `)
-      .eq("user_id", user.id);
-    
+  const fetchCartItems = async (currentUser: SupabaseUser) => {
+    if (!currentUser) return;
+    const { data, error } = await supabase.from("cart_items").select(`*, medicines (*)`).eq("user_id", currentUser.id);
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch cart items",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to fetch cart items", variant: "destructive" });
     } else {
       setCartItems(data || []);
     }
   };
 
-  const fetchOrders = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from("medicine_orders")
-      .select(`
-        *,
-        order_items (
-          quantity,
-          unit_price,
-          medicines (*)
-        )
-      `)
-      .eq("user_id", user.id)
-      .order("ordered_at", { ascending: false });
-    
+  const fetchOrders = async (currentUser: SupabaseUser) => {
+    if (!currentUser) return;
+    const { data, error } = await supabase.from("medicine_orders").select(`*, order_items (quantity, unit_price, medicines (*))`).eq("user_id", currentUser.id).order("ordered_at", { ascending: false });
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch orders",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to fetch orders", variant: "destructive" });
     } else {
       setOrders(data || []);
     }
   };
 
   const addToCart = async (medicine: Medicine) => {
-    if (!user) {
-      toast({
-        title: "Please Login",
-        description: "You need to login to add items to cart",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    if (!user) return;
     const existingItem = cartItems.find(item => item.medicine_id === medicine.id);
-    
     if (existingItem) {
-      const { error } = await supabase
-        .from("cart_items")
-        .update({ quantity: existingItem.quantity + 1 })
-        .eq("id", existingItem.id);
-      
+      const { error } = await supabase.from("cart_items").update({ quantity: existingItem.quantity + 1 }).eq("id", existingItem.id);
       if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to update cart",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to update cart", variant: "destructive" });
       } else {
-        fetchCartItems();
-        toast({
-          title: "Cart Updated",
-          description: `${medicine.name} quantity increased`,
-        });
+        fetchCartItems(user);
+        toast({ title: "Cart Updated", description: `${medicine.name} quantity increased` });
       }
     } else {
-      const { error } = await supabase
-        .from("cart_items")
-        .insert({
-          user_id: user.id,
-          medicine_id: medicine.id,
-          quantity: 1,
-        });
-      
+      const { error } = await supabase.from("cart_items").insert({ user_id: user.id, medicine_id: medicine.id, quantity: 1 });
       if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to add to cart",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to add to cart", variant: "destructive" });
       } else {
-        fetchCartItems();
-        toast({
-          title: "Added to Cart",
-          description: `${medicine.name} added to your cart`,
-        });
+        fetchCartItems(user);
+        toast({ title: "Added to Cart", description: `${medicine.name} added to your cart` });
       }
     }
   };
 
   const updateCartQuantity = async (itemId: string, newQuantity: number) => {
+    if (!user) return;
     if (newQuantity <= 0) {
-      const { error } = await supabase
-        .from("cart_items")
-        .delete()
-        .eq("id", itemId);
-      
+      const { error } = await supabase.from("cart_items").delete().eq("id", itemId);
       if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to remove item",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to remove item", variant: "destructive" });
       } else {
-        fetchCartItems();
+        fetchCartItems(user);
       }
     } else {
-      const { error } = await supabase
-        .from("cart_items")
-        .update({ quantity: newQuantity })
-        .eq("id", itemId);
-      
+      const { error } = await supabase.from("cart_items").update({ quantity: newQuantity }).eq("id", itemId);
       if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to update quantity",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to update quantity", variant: "destructive" });
       } else {
-        fetchCartItems();
+        fetchCartItems(user);
       }
     }
   };
@@ -252,7 +174,6 @@ const Medicines = () => {
     
     const orderNumber = `ORD-${Date.now()}`;
     
-    // Create order
     const { data: order, error: orderError } = await supabase
       .from("medicine_orders")
       .insert({
@@ -267,16 +188,11 @@ const Medicines = () => {
       .single();
     
     if (orderError) {
-      toast({
-        title: "Order Failed",
-        description: orderError.message,
-        variant: "destructive",
-      });
+      toast({ title: "Order Failed", description: orderError.message, variant: "destructive" });
       setLoading(false);
       return;
     }
     
-    // Create order items
     const orderItems = cartItems.map(item => ({
       order_id: order.id,
       medicine_id: item.medicine_id,
@@ -285,126 +201,114 @@ const Medicines = () => {
       total_price: item.medicines.price * item.quantity,
     }));
     
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .insert(orderItems);
+    const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
     
     if (itemsError) {
-      toast({
-        title: "Order Failed",
-        description: itemsError.message,
-        variant: "destructive",
-      });
+      toast({ title: "Order Failed", description: itemsError.message, variant: "destructive" });
       setLoading(false);
       return;
     }
     
-    // Clear cart
-    const { error: clearError } = await supabase
-      .from("cart_items")
-      .delete()
-      .eq("user_id", user.id);
+    const { error: clearError } = await supabase.from("cart_items").delete().eq("user_id", user.id);
     
     if (clearError) {
       console.error("Failed to clear cart:", clearError);
     }
     
-    toast({
-      title: "Order Placed!",
-      description: `Order ${orderNumber} has been placed successfully.`,
-    });
+    toast({ title: "Order Placed!", description: `Order ${orderNumber} has been placed successfully.` });
     
     setIsCartOpen(false);
     setDeliveryAddress("");
     setDeliveryInstructions("");
-    fetchCartItems();
-    fetchOrders();
+    fetchCartItems(user);
+    fetchOrders(user);
     setLoading(false);
   };
 
-const filteredMedicines = medicines.filter(medicine =>
-  medicine.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  medicine.generic_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  medicine.category.toLowerCase().includes(searchTerm.toLowerCase())
-);
+  const cartTotal = cartItems.reduce(
+    (sum, item) => sum + item.medicines.price * item.quantity,
+    0
+  );
 
-// Cart total and status color helpers
-const cartTotal = cartItems.reduce(
-  (sum, item) => sum + item.medicines.price * item.quantity,
-  0
-);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "text-warning bg-warning/10";
+      case "approved":
+        return "text-primary bg-primary/10";
+      case "delivered":
+        return "text-success bg-success/10";
+      case "cancelled":
+        return "text-destructive bg-destructive/10";
+      default:
+        return "text-muted-foreground bg-muted/10";
+    }
+  };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "pending":
-      return "text-warning bg-warning/10";
-    case "approved":
-      return "text-primary bg-primary/10";
-    case "delivered":
-      return "text-success bg-success/10";
-    case "cancelled":
-      return "text-destructive bg-destructive/10";
-    default:
-      return "text-muted-foreground bg-muted/10";
-  }
-};
+  const filteredMedicines = medicines.filter(med => 
+    med.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (med.brand && med.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    med.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-return (
-  <div className="min-h-screen bg-background">
-    <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-      <BackBar label="Back" to="/" />
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Medicine Store</h1>
-          <p className="text-muted-foreground">Order medicines and health products</p>
-        </div>
-        <div className="flex gap-2">
-          <Dialog open={isOrdersOpen} onOpenChange={setIsOrdersOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Package className="w-4 h-4 mr-2" />
-                My Orders
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>My Orders</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                {orders.map((order) => (
-                  <Card key={order.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg">{order.order_number}</CardTitle>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
-                          {order.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Ordered on {new Date(order.ordered_at).toLocaleDateString()}
-                      </p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {order.order_items.map((item, index) => (
-                          <div key={index} className="flex justify-between items-center text-sm">
-                            <span>{item.medicines.name} × {item.quantity}</span>
-                            <span>₹{(item.unit_price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="border-t pt-2 mt-2">
-                        <div className="flex justify-between font-semibold">
-                          <span>Total: ₹{order.total_amount.toFixed(2)}</span>
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+        <BackBar label="Back" to="/" />
+        
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Pharmacy</h1>
+            <p className="text-muted-foreground">Order medicines from the campus pharmacy</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Dialog open={isOrdersOpen} onOpenChange={setIsOrdersOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Package className="w-4 h-4 mr-2" />
+                  My Orders
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>My Orders</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {orders.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">You have no past orders.</p>
+                  ) : orders.map((order) => (
+                    <Card key={order.id}>
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-lg">{order.order_number}</CardTitle>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </span>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </DialogContent>
-          </Dialog>
-            
+                        <p className="text-sm text-muted-foreground">
+                          Ordered on {new Date(order.ordered_at).toLocaleDateString()}
+                        </p>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {order.order_items.map((item, index) => (
+                            <div key={index} className="flex justify-between items-center text-sm">
+                              <span>{item.medicines.name} × {item.quantity}</span>
+                              <span>₹{(item.unit_price * item.quantity).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="border-t pt-2 mt-2">
+                          <div className="flex justify-between font-semibold">
+                            <span>Total: ₹{order.total_amount.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
             <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-gradient-primary hover:shadow-glow relative">
@@ -435,57 +339,30 @@ return (
                           <p className="text-sm text-muted-foreground">₹{item.medicines.price}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
-                          >
+                          <Button size="sm" variant="outline" onClick={() => updateCartQuantity(item.id, item.quantity - 1)}>
                             <Minus className="w-3 h-3" />
                           </Button>
                           <span className="w-8 text-center">{item.quantity}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                          >
+                          <Button size="sm" variant="outline" onClick={() => updateCartQuantity(item.id, item.quantity + 1)}>
                             <Plus className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
                     ))}
-                    
                     <div className="border-t pt-4">
                       <div className="flex justify-between font-semibold mb-4">
                         <span>Total: ₹{cartTotal.toFixed(2)}</span>
                       </div>
-                      
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="address">Delivery Address</Label>
-                          <Textarea
-                            id="address"
-                            value={deliveryAddress}
-                            onChange={(e) => setDeliveryAddress(e.target.value)}
-                            placeholder="Enter your delivery address..."
-                            required
-                          />
+                          <Textarea id="address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder="Enter your delivery address..." required />
                         </div>
-                        
                         <div className="space-y-2">
                           <Label htmlFor="instructions">Delivery Instructions (Optional)</Label>
-                          <Textarea
-                            id="instructions"
-                            value={deliveryInstructions}
-                            onChange={(e) => setDeliveryInstructions(e.target.value)}
-                            placeholder="Any special instructions..."
-                          />
+                          <Textarea id="instructions" value={deliveryInstructions} onChange={(e) => setDeliveryInstructions(e.target.value)} placeholder="Any special instructions..." />
                         </div>
-                        
-                        <Button 
-                          onClick={checkout} 
-                          disabled={loading || !deliveryAddress}
-                          className="w-full bg-gradient-primary"
-                        >
+                        <Button onClick={checkout} disabled={loading || !deliveryAddress} className="w-full bg-gradient-primary">
                           {loading ? "Processing..." : "Place Order"}
                         </Button>
                       </div>
@@ -497,18 +374,12 @@ return (
           </div>
         </div>
 
-        <div className="mb-6 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            type="text"
-            placeholder="Search medicines, brands, or categories..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <div className="relative w-full sm:w-auto sm:max-w-xs mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input type="text" placeholder="Search medicines..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMedicines.map((medicine) => (
             <Card key={medicine.id} className="border-primary/20 hover:shadow-glow transition-all">
               <CardHeader>
@@ -520,16 +391,12 @@ return (
                     <div>
                       <CardTitle className="text-lg">{medicine.name}</CardTitle>
                       {medicine.generic_name && (
-                        <p className="text-sm text-muted-foreground">
-                          Generic: {medicine.generic_name}
-                        </p>
+                        <p className="text-sm text-muted-foreground">Generic: {medicine.generic_name}</p>
                       )}
                     </div>
                   </div>
                   {medicine.requires_prescription && (
-                    <Badge variant="outline" className="text-xs">
-                      Prescription
-                    </Badge>
+                    <Badge variant="outline" className="text-xs">Prescription</Badge>
                   )}
                 </div>
               </CardHeader>
@@ -559,15 +426,9 @@ return (
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-lg font-bold text-primary">₹{medicine.price}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Stock: {medicine.stock_quantity}
-                    </p>
+                    <p className="text-xs text-muted-foreground">Stock: {medicine.stock_quantity}</p>
                   </div>
-                  <Button
-                    onClick={() => addToCart(medicine)}
-                    disabled={medicine.stock_quantity === 0}
-                    className="bg-gradient-primary hover:shadow-glow"
-                  >
+                  <Button onClick={() => addToCart(medicine)} disabled={medicine.stock_quantity === 0} className="bg-gradient-primary hover:shadow-glow">
                     <Plus className="w-4 h-4 mr-2" />
                     Add to Cart
                   </Button>

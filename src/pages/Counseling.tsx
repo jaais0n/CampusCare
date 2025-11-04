@@ -257,14 +257,14 @@ const Counseling = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         <BackBar label="Back" to="/" />
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Counseling</h1>
             <p className="text-muted-foreground">Book with our campus counselor</p>
           </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-primary hover:shadow-glow">
+              <Button className="w-full sm:w-auto bg-gradient-primary hover:shadow-glow">
                 <Plus className="w-4 h-4 mr-2" />
                 New Session
               </Button>
@@ -315,8 +315,8 @@ const Counseling = () => {
             {bookings.map((booking) => (
               <Card key={booking.id} className="border-border">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="flex-grow">
                       <div className="flex items-center justify-between">
                         <h3 className="font-medium">{booking.counselors?.name || 'Campus Counselor'}</h3>
                         <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
@@ -332,7 +332,7 @@ const Counseling = () => {
                         <span>{booking.confirmed_time || booking.preferred_time}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-4 sm:mt-0 flex-shrink-0">
                       <Button variant="outline" size="sm" onClick={() => { setEditing(booking); setEditTime(booking.preferred_time); setEditOpen(true); }}>Edit</Button>
                       <Button variant="destructive" size="sm" onClick={async () => { await supabase.from('counseling_bookings').delete().eq('id', booking.id); setBookings(prev => prev.filter(b => b.id !== booking.id)); }}>Delete</Button>
                     </div>

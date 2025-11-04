@@ -339,7 +339,7 @@ const Wheelchairs = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         <BackBar label="Back" to="/" />
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Wheelchair Booking</h1>
             <p className="text-muted-foreground">Reserve wheelchairs for mobility assistance</p>
@@ -508,8 +508,8 @@ const Wheelchairs = () => {
               {bookings.map((booking) => (
                 <Card key={booking.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex items-center space-x-3 flex-grow">
                         <div className="p-2 bg-blue-50 rounded-lg">
                           <Activity className="h-5 w-5 text-blue-600" />
                         </div>
@@ -540,7 +540,7 @@ const Wheelchairs = () => {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mt-4 sm:mt-0 flex-shrink-0">
                         <Button variant="outline" size="sm" onClick={() => editBooking(booking)}>
                           <Edit className="w-4 h-4 mr-1" /> Edit
                         </Button>
@@ -559,7 +559,7 @@ const Wheelchairs = () => {
                 <Activity className="w-12 h-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">No Bookings Yet</h3>
                 <p className="text-muted-foreground mb-4">Book your first wheelchair!</p>
-                <Button onClick={() => setIsOpen(true)} className="bg-gradient-primary">
+                <Button onClick={() => setIsOpen(true)} className="w-full sm:w-auto bg-gradient-primary">
                   Book Wheelchair
                 </Button>
               </CardContent>

@@ -22,27 +22,70 @@ const EmergencyContact = ({ name, number, icon: Icon }: { name: string; number: 
   </a>
 );
 
+async function checkTableExists(tableName: string): Promise<boolean> {
+  try {
+    // @ts-ignore
+    const { data, error } = await supabase.rpc('table_exists', { table_name: tableName });
+    if (error) {
+      console.warn(`RPC 'table_exists' not found. Falling back to a direct query.`, error.message);
+      // Fallback for when the RPC function doesn't exist
+      // @ts-ignore
+      const { data: tableData, error: tableError } = await supabase.from('information_schema.tables').select('table_name').eq('table_schema', 'public').eq('table_name', tableName);
+      if (tableError) {
+        console.error('Fallback check failed:', tableError);
+        return false; // Cannot determine, assume false
+      }
+      return (tableData?.length ?? 0) > 0;
+    }
+    return data === true;
+  } catch (err) {
+    console.error('Exception when checking if table exists:', err);
+    return false;
+  }
+}
+
 export default function SOSPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSendingAlert, setIsSendingAlert] = useState(false);
   const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [userProfile, setUserProfile] = useState<{full_name?: string; roll_number?: string} | null>(null);
 
   useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = async () => {
+    // Check if user is authenticated and fetch profile
+    const checkAuthAndFetchProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please sign in to access emergency services",
-          variant: "destructive"
-        });
-        navigate("/auth");
+      if (session) {
+        // Fetch user profile only if a session exists
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('full_name, roll_number')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (!error && profile) {
+            setUserProfile({
+              full_name: profile.full_name || session.user.email?.split('@')[0] || 'User',
+              roll_number: profile.roll_number || ''
+            });
+          } else {
+            setUserProfile({
+              full_name: session.user.email?.split('@')[0] || 'User',
+              roll_number: ''
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching profile:', err);
+          setUserProfile({
+            full_name: session.user.email?.split('@')[0] || 'User',
+            roll_number: ''
+          });
+        }
       }
     };
     
-    checkAuth();
+    checkAuthAndFetchProfile();
     getCurrentLocation();
   }, [navigate, toast]);
 
@@ -69,51 +112,38 @@ export default function SOSPage() {
 
   const handleEmergencyAlert = async () => {
     setIsSendingAlert(true);
-    
     try {
-      // Get user data
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      
-      // Get user profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, roll_number')
-        .eq('id', user.id)
-        .single();
-      
-      // Create emergency alert
-      const { error } = await supabase
-        .from('emergency_alerts')
-        .insert([{
-          user_id: user.id,
-          user_name: profile?.full_name || user.email?.split('@')[0] || 'User',
-          user_type: 'student',
-          status: 'active',
-          location: location 
-            ? `https://www.google.com/maps?q=${location.lat},${location.lng}`
-            : 'Location not available',
-          additional_info: JSON.stringify({
-            email: user.email,
-            roll_number: profile?.roll_number
-          })
-        }]);
+      const alertData = {
+        user_id: user?.id ?? null,
+        user_name: userProfile?.full_name ?? 'Anonymous User',
+        user_type: user ? 'student' : 'anonymous',
+        status: 'active',
+        location: location ? `https://www.google.com/maps?q=${location.lat},${location.lng}` : 'Location not available',
+        additional_info: JSON.stringify({
+          email: user?.email ?? 'N/A',
+          roll_number: userProfile?.roll_number ?? 'N/A',
+          note: user ? 'Alert from a registered user.' : 'Alert from an anonymous user.'
+        })
+      };
 
+      const tableAvailable = await checkTableExists('emergency_alerts');
+      if (!tableAvailable) {
+        throw new Error('Emergency system is not properly configured. Please contact support.');
+      }
+
+      // @ts-ignore
+      const { error } = await supabase.from('emergency_alerts').insert([alertData]);
       if (error) throw error;
 
-      // Call emergency services
       window.open('tel:112', '_blank');
-      
-      toast({
-        title: "Emergency Alert Sent!",
-        description: "Help is on the way. Stay calm and follow instructions.",
-      });
-      
-    } catch (error) {
+      toast({ title: "Emergency Alert Sent!", description: "Help is on the way. Stay calm." });
+
+    } catch (error: any) {
       console.error("Error sending alert:", error);
       toast({
-        title: "Error",
-        description: "Failed to send emergency alert. Please try again or call emergency services directly.",
+        title: "Error Sending Alert",
+        description: error.message || "Please try again or call emergency services directly.",
         variant: "destructive"
       });
     } finally {
@@ -130,6 +160,20 @@ export default function SOSPage() {
             <AlertTriangle className="h-8 w-8" />
           </div>
           <h1 className="text-3xl font-bold mb-2">Emergency SOS</h1>
+          {userProfile && (
+            <div className="bg-white/10 rounded-lg p-3 mb-4 text-left">
+              <div className="flex items-center gap-2 text-sm mb-1">
+                <span className="font-medium">Name:</span>
+                <span>{userProfile.full_name}</span>
+              </div>
+              {userProfile.roll_number && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium">Roll No:</span>
+                  <span>{userProfile.roll_number}</span>
+                </div>
+              )}
+            </div>
+          )}
           <p className="text-red-100 mb-6">
             Press the button below to alert campus security and emergency services
           </p>
@@ -191,7 +235,7 @@ export default function SOSPage() {
               </h3>
               <p className="text-sm text-muted-foreground">
                 {location 
-                  ? `Approximate location: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
+                  ? `Approximate location: ${location.lat?.toFixed(4) || 'N/A'}, ${location.lng?.toFixed(4) || 'N/A'}`
                   : 'Enable location services to share your location with emergency contacts.'
                 }
               </p>

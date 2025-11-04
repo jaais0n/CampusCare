@@ -72,7 +72,7 @@ const AdminMedicalAppointment = () => {
     <section className="min-h-screen bg-background px-4 py-8">
       <div className="max-w-7xl mx-auto">
         <BackBar label="Back" to="/admin" />
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Medical Appointment</h1>
             <p className="text-sm text-muted-foreground">Manage student medical appointments</p>
@@ -101,7 +101,7 @@ const AdminMedicalAppointment = () => {
           <div className="grid gap-4">
             {appointments.map((row) => (
               <Card key={row.id} className="border-border">
-                <CardContent className="p-4 flex items-start justify-between">
+                <CardContent className="p-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div>
                     <div className="text-sm text-muted-foreground">Student</div>
                     <div className="font-medium">
@@ -117,7 +117,7 @@ const AdminMedicalAppointment = () => {
                       <Calendar className="w-4 h-4" /> {new Date(row.appointment_date).toLocaleDateString()} • <Clock className="w-4 h-4" /> {row.appointment_time}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-xs px-2 py-1 rounded-full capitalize ${statusClass(row.status)}`}>{row.status}</span>
                     <Button className="bg-green-600 hover:bg-green-700 text-white" size="sm" onClick={() => updateStatus(row.id, 'confirmed')}>Approve</Button>
                     <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm" onClick={() => updateStatus(row.id, 'completed')}>Completed</Button>

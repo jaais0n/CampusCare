@@ -1,16 +1,37 @@
 import HeroSection from "@/components/HeroSection";
 import ServicesOverview from "@/components/ServicesOverview";
-import SOSEmergency from "@/components/SOSEmergency";
+
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Heart, Mail, Phone, MapPin } from "lucide-react";
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  const go = async (path: string, title: string) => {
+    if (path === "/sos") {
+      navigate(path);
+      return;
+    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth", { state: { message: `You must be logged in to access ${title}.` } });
+        return;
+      }
+      navigate(path);
+    } catch {
+      navigate(path);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <main>
         <HeroSection />
         <ServicesOverview />
-        <SOSEmergency />
+        {/* SOS section removed to avoid duplication; use /sos page for SOS interface */}
 
 
         {/* Footer */}
@@ -44,18 +65,18 @@ const Index = () => {
               <div>
                 <h4 className="font-semibold text-foreground mb-4">Quick Links</h4>
                 <div className="space-y-2">
-                  <a href="#emergency" className="block text-muted-foreground hover:text-primary transition-colors">
+                  <button type="button" onClick={() => go('/sos', 'Emergency Services')} className="block text-left w-full text-muted-foreground hover:text-primary transition-colors">
                     Emergency Services
-                  </a>
-                  <a href="#health" className="block text-muted-foreground hover:text-primary transition-colors">
+                  </button>
+                  <button type="button" onClick={() => go('/appointments', 'Health Services')} className="block text-left w-full text-muted-foreground hover:text-primary transition-colors">
                     Health Services
-                  </a>
-                  <a href="#wellness" className="block text-muted-foreground hover:text-primary transition-colors">
+                  </button>
+                  <button type="button" onClick={() => go('/wellness', 'Wellness Programs')} className="block text-left w-full text-muted-foreground hover:text-primary transition-colors">
                     Wellness Programs
-                  </a>
-                  <a href="#support" className="block text-muted-foreground hover:text-primary transition-colors">
+                  </button>
+                  <button type="button" onClick={() => go('/counseling', 'Support Center')} className="block text-left w-full text-muted-foreground hover:text-primary transition-colors">
                     Support Center
-                  </a>
+                  </button>
                 </div>
               </div>
               

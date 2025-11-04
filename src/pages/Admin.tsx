@@ -50,7 +50,7 @@ const Admin = () => {
     { icon: Accessibility, title: "Wheelchairs", href: "/admin/wheelchairs", desc: "Inventory & bookings" },
     { icon: Pill, title: "Medicines", href: "/medicines", desc: "Orders & stock" },
     { icon: HeartPulse, title: "Wellness", href: "/wellness", desc: "Programs & enrollments" },
-    { icon: AlertTriangle, title: "Emergency", href: "/emergency", desc: "SOS logs & audits" },
+    { icon: AlertTriangle, title: "Emergency", href: "/sos", desc: "SOS logs & audits" },
   ];
 
   const [adminAppointments, setAdminAppointments] = useState<any[]>([]);
