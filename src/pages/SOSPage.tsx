@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, MapPin, Phone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase, tableExists } from '@/lib/supabase';
 import { useAuth } from '@/hooks/use-auth';
 import LiveLocationMap from '@/components/LiveLocationMap';
 import { useNavigate } from 'react-router-dom';
@@ -27,27 +27,6 @@ const EmergencyContact = ({ name, number, icon: Icon }: { name: string; number: 
   </a>
 );
 
-async function checkTableExists(tableName: string): Promise<boolean> {
-  try {
-    // @ts-ignore
-    const { data, error } = await supabase.rpc('table_exists', { table_name: tableName });
-    if (error) {
-      console.warn(`RPC 'table_exists' not found. Falling back to a direct query.`, error.message);
-      // Fallback for when the RPC function doesn't exist
-      // @ts-ignore
-      const { data: tableData, error: tableError } = await supabase.from('information_schema.tables').select('table_name').eq('table_schema', 'public').eq('table_name', tableName);
-      if (tableError) {
-        console.error('Fallback check failed:', tableError);
-        return false; // Cannot determine, assume false
-      }
-      return (tableData?.length ?? 0) > 0;
-    }
-    return data === true;
-  } catch (err) {
-    console.error('Exception when checking if table exists:', err);
-    return false;
-  }
-}
 
 const SOSPage = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -58,6 +37,8 @@ const SOSPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [isPlayingSound, setIsPlayingSound] = useState(false);
 
   useEffect(() => {
     const getSession = async () => {
@@ -141,23 +122,29 @@ const SOSPage = () => {
         user_type: user.user_metadata.role || 'unknown',
         status: 'active',
         location: location ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}` : 'Location not available',
-        address: location?.address || 'Address not available',
-        coordinates: location ? `${location.latitude}, ${location.longitude}` : 'Coordinates not available',
         additional_info: {
+            ...(location ? { latitude: location.latitude, longitude: location.longitude, address: location.address } : {}),
           email: user.email,
           // Removed profile-specific fields
         },
       };
 
-      const tableAvailable = await checkTableExists('emergency_alerts');
+      const tableAvailable = await tableExists('emergency_alerts');
       if (!tableAvailable) {
         throw new Error('Emergency system is not properly configured. Please contact support.');
       }
 
+      console.log("Attempting to insert alert data:", alertData);
       const { error } = await supabase.from('emergency_alerts').insert([alertData]);
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting alert data:", error);
+        throw error;
+      }
+      console.log("Alert data inserted successfully.");
 
-      window.open('tel:112', '_blank');
+      setIsPlayingSound(true); // Start playing sound after alert is sent
+
+      // window.open('tel:112', '_blank');
       toast({ title: "Emergency Alert Sent!", description: "Help is on the way. Stay calm." });
 
     } catch (error: any) {
@@ -174,7 +161,7 @@ const SOSPage = () => {
 
   useEffect(() => {
     if (alertAudioRef.current) {
-      if (isSendingAlert) {
+      if (isPlayingSound) {
         console.log("Attempting to play audio...");
         alertAudioRef.current.play().catch(error => {
           console.error("Error playing audio:", error);
@@ -185,7 +172,7 @@ const SOSPage = () => {
         alertAudioRef.current.currentTime = 0;
       }
     }
-  }, [isSendingAlert]);
+  }, [isPlayingSound]);
 
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-gray-800 dark:text-white ${isSendingAlert ? 'animate-alert-flash' : ''}`}>
@@ -194,7 +181,7 @@ const SOSPage = () => {
         ref={alertAudioRef}
         src="/Alertsound.mp3"
         preload="auto"
-        loop // Add loop attribute here
+        onEnded={() => setIsPlayingSound(false)} // Stop playing sound when it ends
         style={{ display: 'none' }}
       />
       

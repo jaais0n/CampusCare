@@ -12,16 +12,16 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 // Helper function to check if a table exists
 export async function tableExists(tableName: string): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('pg_tables')
-    .select('tablename')
-    .eq('schemaname', 'public')
-    .eq('tablename', tableName);
-    
-  if (error) {
-    console.error('Error checking table existence:', error);
+  try {
+    const { data, error } = await supabase.from(tableName).select('id').limit(1);
+    if (error) {
+      console.warn(`Error checking table '${tableName}' existence:`, error.message);
+      return false;
+    }
+    console.log(`Table '${tableName}' exists:`, data !== null);
+    return data !== null;
+  } catch (err) {
+    console.error(`Exception when checking if table '${tableName}' exists:`, err);
     return false;
   }
-  
-  return (data?.length ?? 0) > 0;
 }

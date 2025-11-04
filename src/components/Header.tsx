@@ -52,21 +52,10 @@ const Header = () => {
           let name = profile?.full_name || "";
           const metaName = (user.user_metadata as any)?.full_name as string | undefined;
 
-          if (name.toLowerCase() !== "jaison mathew") {
-            try {
-              await supabase.from("profiles").upsert({ id: user.id, full_name: "Jaison Mathew" } as any);
-              name = "Jaison Mathew";
-            } catch {}
-          } else if (!name) {
+          if (!name) {
             const fallbackFromMeta = (metaName && metaName.trim()) ? metaName.trim() : null;
             const fallbackFromEmail = user.email ? user.email.split("@")[0] : null;
-            const chosen = fallbackFromMeta || fallbackFromEmail || "";
-            if (chosen) {
-              try {
-                await supabase.from("profiles").upsert({ id: user.id, full_name: chosen } as any);
-                name = chosen;
-              } catch {}
-            }
+            name = fallbackFromMeta || fallbackFromEmail || "";
           }
           setFullName(name);
           setRollNumber(profile?.roll_number || "");
