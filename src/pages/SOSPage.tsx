@@ -1,9 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Loader2, Phone, MapPin } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import React, { useState, useEffect, useRef } from 'react';
+import { AlertTriangle, MapPin, Phone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/use-auth';
+import LiveLocationMap from '@/components/LiveLocationMap';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { User as AuthUser } from '@supabase/supabase-js';
 // import { Tables } from '@/types/supabase'; // removed – type not exported
@@ -50,7 +52,7 @@ async function checkTableExists(tableName: string): Promise<boolean> {
 const SOSPage = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isSendingAlert, setIsSendingAlert] = useState(false);
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [location, setLocation] = useState<{ latitude: number; longitude: number; address?: string } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [emergencyContacts, setEmergencyContacts] = useState<any[]>([]); // Replace 'any' with actual type
   const { toast } = useToast();
@@ -78,11 +80,29 @@ const SOSPage = () => {
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Get address from coordinates using reverse geocoding
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
+            const data = await response.json();
+            
+            const address = data.display_name || `${data.address?.road || ''}, ${data.address?.suburb || ''}, ${data.address?.city || ''}`.trim();
+            
+            setLocation({
+              latitude,
+              longitude,
+              address: address || 'Location details not available'
+            });
+          } catch (error) {
+            console.error("Error getting address:", error);
+            setLocation({
+              latitude,
+              longitude,
+              address: 'Address details unavailable'
+            });
+          }
         },
         (error) => {
           console.error("Error getting location:", error);
@@ -108,23 +128,6 @@ const SOSPage = () => {
   const handleSendAlert = async () => {
     console.log("Send alert button clicked");
     
-    // Play audio fully once when button is clicked
-    if (alertAudioRef.current) {
-      try {
-        console.log("Playing audio fully once...");
-        alertAudioRef.current.currentTime = 0;
-        await alertAudioRef.current.play();
-        console.log("Audio started playing");
-        
-        // Listen for when audio ends
-        alertAudioRef.current.addEventListener('ended', () => {
-          console.log("Audio finished playing");
-        });
-      } catch (error) {
-        console.log("Audio play failed:", error);
-      }
-    }
-    
     setIsSendingAlert(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -138,6 +141,8 @@ const SOSPage = () => {
         user_type: user.user_metadata.role || 'unknown',
         status: 'active',
         location: location ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}` : 'Location not available',
+        address: location?.address || 'Address not available',
+        coordinates: location ? `${location.latitude}, ${location.longitude}` : 'Coordinates not available',
         additional_info: {
           email: user.email,
           // Removed profile-specific fields
@@ -167,6 +172,21 @@ const SOSPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (alertAudioRef.current) {
+      if (isSendingAlert) {
+        console.log("Attempting to play audio...");
+        alertAudioRef.current.play().catch(error => {
+          console.error("Error playing audio:", error);
+        });
+      } else {
+        console.log("Pausing audio...");
+        alertAudioRef.current.pause();
+        alertAudioRef.current.currentTime = 0;
+      }
+    }
+  }, [isSendingAlert]);
+
   return (
     <div className={`min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4 text-gray-800 dark:text-white ${isSendingAlert ? 'animate-alert-flash' : ''}`}>
       {/* Hidden audio element for better browser compatibility */}
@@ -174,9 +194,10 @@ const SOSPage = () => {
         ref={alertAudioRef}
         src="/Alertsound.mp3"
         preload="auto"
-        volume="1.0"
+        loop // Add loop attribute here
         style={{ display: 'none' }}
       />
+      
       
       <div className="text-center mb-8">
         <AlertTriangle
@@ -206,19 +227,51 @@ const SOSPage = () => {
       )}
 
       {locationError && (
-        <p className="text-red-500 mt-4">Location Error: {locationError}</p>
+        <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-center text-red-600 dark:text-red-400">
+            <MapPin size={16} className="mr-2" />
+            <span>Location Error: {locationError}</span>
+          </div>
+          <button 
+            onClick={getCurrentLocation}
+            className="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline"
+          >
+            Try again
+          </button>
+        </div>
       )}
 
+      {/* Loading state */}
+      {!location && !locationError && (
+        <div className="mt-6 w-full max-w-md">
+          <div className="w-full h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto mb-2"></div>
+              <p className="text-gray-600 dark:text-gray-400">Getting your location...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Live Location Map */}
       {location && (
-        <p className="text-base mt-4 flex items-center justify-center text-gray-600 dark:text-gray-400">
-          <MapPin size={18} className="mr-2" />
-          Location: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
-        </p>
+        <div className="mt-6 w-full max-w-md">
+          <LiveLocationMap 
+            location={location}
+            isActive={isSendingAlert}
+          />
+        </div>
       )}
 
       <p className="text-base mt-6 mb-4 text-gray-600 dark:text-gray-400">
         Press the button below to alert campus security and emergency services
       </p>
+
+      {/* Warning Message */}
+      <div className="bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg mb-4 text-sm text-center font-medium">
+        <p className="font-bold">WARNING:</p>
+        <p>This button is for EMERGENCIES ONLY. Misuse will result in a ₹5000 fine.</p>
+      </div>
 
       <Button
         onClick={handleSendAlert}

@@ -92,18 +92,6 @@ export default {
             height: "0",
           },
         },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "sos-pulse": "sos-pulse 2s infinite",
-        "fade-in": "fadeIn 0.5s ease-out",
-        "slide-up": "slideUp 0.4s ease-out",
-        "sos-glow": "sos-glow 1.5s infinite alternate",
-        "icon-glow": "icon-glow 1.5s infinite alternate",
-        "alert-flash": "alert-flash 1s ease-in-out infinite",
-      },
-      keyframes: {
         "sos-glow": {
           "0%": {
             "box-shadow": "0 0 5px rgba(255, 0, 0, 0.4)",
@@ -123,16 +111,23 @@ export default {
           },
         },
         "alert-flash": {
-          "0%": {
-            "background-color": "#f9fafb",
+          "0%, 100%": { 
+            backgroundColor: "rgb(220, 38, 38)" // Tailwind's red-600
           },
-          "50%": {
-            "background-color": "rgba(239, 68, 68, 0.12)",
-          },
-          "100%": {
-            "background-color": "#f9fafb",
+          "50%": { 
+            backgroundColor: "rgb(255, 255, 255)"
           },
         },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "sos-pulse": "sos-pulse 2s infinite",
+        "fade-in": "fadeIn 0.5s ease-out",
+        "slide-up": "slideUp 0.4s ease-out",
+        "sos-glow": "sos-glow 1.5s infinite alternate",
+        "icon-glow": "icon-glow 1.5s infinite alternate",
+        "alert-flash": "alert-flash 1s ease-in-out infinite",
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
@@ -146,5 +141,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate")]
 } satisfies Config;
