@@ -303,44 +303,62 @@ const Appointments = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        <BackBar label="Back" to="/" />
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+      <div className="max-w-4xl mx-auto p-3 sm:p-6">
+        <BackBar />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Medical Appointment</h1>
-            <p className="text-sm text-gray-500">Book with our campus doctor</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Medical Appointments</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Book and manage your health appointments</p>
           </div>
+
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto bg-gradient-primary">
+              <Button className="bg-gradient-primary hover:shadow-glow w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
-                New Appointment
+                Book Appointment
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[400px] mx-3">
               <DialogHeader>
-                <DialogTitle>Book Medical Appointment</DialogTitle>
+                <DialogTitle className="text-lg sm:text-xl">Book New Appointment</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>Doctor</Label>
-                  <Input value={`${doctors[0].name} - ${doctors[0].specialization}`} readOnly />
+                  <Label className="text-sm">Doctor</Label>
+                  <Select value={selectedDoctor} onValueChange={setSelectedDoctor}>
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder="Select a doctor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {doctors.map((doctor) => (
+                        <SelectItem key={doctor.id} value={doctor.id} className="text-sm">
+                          {doctor.name} - {doctor.specialization}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Date</Label>
-                    <Input type="date" value={appointmentDate} readOnly />
+                    <Label className="text-sm">Date</Label>
+                    <Input
+                      type="date"
+                      value={appointmentDate}
+                      onChange={(e) => setAppointmentDate(e.target.value)}
+                      className="text-sm"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Time</Label>
-                    <Input 
-                      type="time" 
+                    <Label className="text-sm">Time</Label>
+                    <Input
+                      type="time"
                       value={appointmentTime}
                       onChange={(e) => setAppointmentTime(e.target.value)}
+                      className="text-sm"
                     />
                   </div>
                 </div>
-                <Button type="button" className="w-full mt-2" onClick={handleBookAppointment} disabled={booking}>
+                <Button type="button" className="w-full mt-2 text-sm sm:text-base" onClick={handleBookAppointment} disabled={booking}>
                   {booking ? 'Booking...' : 'Book Now'}
                 </Button>
               </div>
@@ -348,45 +366,49 @@ const Appointments = () => {
           </Dialog>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {appointments.length === 0 ? (
-            <Card className="text-center p-8 bg-card border-border">
-              <Calendar className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
-              <h3 className="text-lg font-medium text-foreground">No Appointments</h3>
-              <p className="text-sm text-muted-foreground">Book your first appointment to get started</p>
+            <Card className="text-center p-6 sm:p-8 bg-card border-border">
+              <Calendar className="mx-auto h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground mb-2" />
+              <h3 className="text-base sm:text-lg font-medium text-foreground">No Appointments</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">Book your first appointment to get started</p>
             </Card>
           ) : (
             appointments.map((appointment) => (
               <Card key={appointment.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div className="flex items-center space-x-3 flex-grow">
-                      <div className="p-2 bg-blue-50 rounded-lg">
-                        <Stethoscope className="h-5 w-5 text-blue-600" />
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex flex-col gap-3 sm:gap-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
+                        <Stethoscope className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                       </div>
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-medium">{appointment.doctors.name}</h3>
-                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <h3 className="font-medium text-sm sm:text-base truncate">{appointment.doctors.name}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium self-start ${getStatusColor(appointment.status)}`}>
                             {getStatusLabel(appointment.status)}
                           </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">{appointment.doctors.specialization}</p>
-                        <div className="flex items-center space-x-2 text-sm text-gray-500 mt-1">
-                          <Calendar className="h-4 w-4 flex-shrink-0" />
-                          <span>{new Date(appointment.appointment_date).toLocaleDateString()}</span>
-                          <span>•</span>
-                          <Clock className="h-4 w-4 flex-shrink-0" />
-                          <span>{appointment.appointment_time}</span>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{appointment.doctors.specialization}</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 mt-1">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>{new Date(appointment.appointment_date).toLocaleDateString()}</span>
+                          </div>
+                          <span className="hidden sm:inline">•</span>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                            <span>{appointment.appointment_time}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-4 sm:mt-0 flex-shrink-0">
-                      <Button variant="outline" size="sm" onClick={() => openEdit(appointment)}>
-                        <Pencil className="w-4 h-4 mr-1" /> Edit
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEdit(appointment)} className="w-full sm:w-auto text-xs sm:text-sm">
+                        <Pencil className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Edit
                       </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDeleteAppointment(appointment.id)}>
-                        <Trash2 className="w-4 h-4 mr-1" /> Delete
+                      <Button variant="destructive" size="sm" onClick={() => handleDeleteAppointment(appointment.id)} className="w-full sm:w-auto text-xs sm:text-sm">
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> Delete
                       </Button>
                     </div>
                   </div>
@@ -398,18 +420,18 @@ const Appointments = () => {
 
         {/* Edit time dialog */}
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogContent className="sm:max-w-[380px]">
+          <DialogContent className="sm:max-w-[380px] mx-3">
             <DialogHeader>
-              <DialogTitle>Edit Appointment Time</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl">Edit Appointment Time</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label>Time</Label>
-                <Input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} />
+                <Label className="text-sm">Time</Label>
+                <Input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} className="text-sm" />
               </div>
-              <div className="flex gap-2">
-                <Button className="flex-1" onClick={saveEdit}>Save</Button>
-                <Button className="flex-1" variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button className="flex-1 text-sm sm:text-base" onClick={saveEdit}>Save</Button>
+                <Button className="flex-1 text-sm sm:text-base" variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
               </div>
             </div>
           </DialogContent>
