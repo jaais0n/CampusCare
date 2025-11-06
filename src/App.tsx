@@ -19,6 +19,7 @@ import Admin from "./pages/Admin";
 import AdminCounseling from "./pages/AdminCounseling";
 import AdminWheelchairs from "./pages/AdminWheelchairs";
 import AdminMedicalAppointment from "./pages/AdminMedicalAppointment";
+import AdminLiveMap from "./pages/AdminLiveMap";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,8 @@ const App = () => (
           <Route path="/admin/counseling" element={<AdminCounseling />} />
           <Route path="/admin/wheelchairs" element={<AdminWheelchairs />} />
           <Route path="/admin/appointments" element={<AdminMedicalAppointment />} />
+          <Route path="/admin/emergency" element={<AdminLiveMap />} />
+
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/counseling" element={<Counseling />} />
           <Route path="/medicines" element={<Medicines />} />
@@ -63,3 +66,4 @@ const App = () => (
 );
 
 export default App;
+

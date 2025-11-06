@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, MapPin, Phone, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { supabase, tableExists } from '@/lib/supabase';
-import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/integrations/supabase/client';
 import LiveLocationMap from '@/components/LiveLocationMap';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -40,6 +39,7 @@ const SOSPage = () => {
   const [isSendingAlert, setIsSendingAlert] = useState(false);
   const [location, setLocation] = useState<{ latitude: number; longitude: number; address?: string } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [geoPermission, setGeoPermission] = useState<PermissionState | null>(null); // 'granted' | 'denied' | 'prompt'
   const [emergencyContacts, setEmergencyContacts] = useState<any[]>([]); // Replace 'any' with actual type
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -101,14 +101,36 @@ const SOSPage = () => {
             description: "Could not access your location. Please enable location services.",
             variant: "destructive",
           });
-        }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
       );
     }
   };
 
+  // Check geolocation permission status (when available)
   useEffect(() => {
-    getCurrentLocation();
+    const checkPerm = async () => {
+      try {
+        // Some browsers do not support Permissions API
+        const anyNav: any = navigator as any;
+        if (anyNav?.permissions?.query) {
+          const status: PermissionStatus = await anyNav.permissions.query({ name: 'geolocation' as PermissionName });
+          setGeoPermission(status.state);
+          status.onchange = () => setGeoPermission(status.state);
+        }
+      } catch {
+        // Ignore – fall back to explicit button action
+      }
+    };
+    checkPerm();
   }, []);
+
+  // If permission is already granted, attempt to fetch automatically
+  useEffect(() => {
+    if (geoPermission === 'granted' && !location) {
+      getCurrentLocation();
+    }
+  }, [geoPermission, location]);
 
 
 
@@ -122,26 +144,37 @@ const SOSPage = () => {
         throw new Error("User not authenticated.");
       }
 
+      // Try to fetch profile for better identity info
+      let prof: { full_name?: string | null; roll_number?: string | null } = {};
+      try {
+        const { data: p } = await (supabase.from as any)('profiles')
+          .select('full_name, roll_number')
+          .eq('id', user.id)
+          .single();
+        prof = p || {};
+      } catch {}
+
+      const userRoll = (user.user_metadata as any)?.roll_number || null;
       const alertData = {
         user_id: user.id,
-        user_name: user.user_metadata.full_name || user.email || 'Anonymous',
+        user_name: prof.full_name || user.user_metadata.full_name || user.email || 'Anonymous',
+        student_name: prof.full_name || null,
+        student_roll: prof.roll_number || userRoll || null,
         user_type: user.user_metadata.role || 'unknown',
         status: 'active',
         location: location ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}` : 'Location not available',
         additional_info: {
             ...(location ? { latitude: location.latitude, longitude: location.longitude, address: location.address } : {}),
           email: user.email,
+          full_name: prof.full_name || user.user_metadata.full_name || null,
+          roll_number: prof.roll_number || userRoll || null,
           // Removed profile-specific fields
         },
       };
 
-      const tableAvailable = await tableExists('emergency_alerts');
-      if (!tableAvailable) {
-        throw new Error('Emergency system is not properly configured. Please contact support.');
-      }
-
       console.log("Attempting to insert alert data:", alertData);
-      const { error } = await supabase.from('emergency_alerts').insert([alertData]);
+      // Cast to any to avoid strict generated types blocking dynamic tables
+      const { error } = await (supabase.from as any)('emergency_alerts').insert([alertData]);
       if (error) {
         console.error("Error inserting alert data:", error);
         throw error;
@@ -161,7 +194,6 @@ const SOSPage = () => {
         variant: "destructive",
       });
     } finally {
-      setIsSendingAlert(false);
       setShowWarningPopup(false); // Close popup after sending alert
     }
   };
@@ -258,6 +290,34 @@ const SOSPage = () => {
             location={location}
             isActive={isSendingAlert}
           />
+        </div>
+      )}
+
+      {/* Location CTA / Guidance for Mobile */}
+      {!location && (
+        <div className="mt-6 w-full max-w-md">
+          <div className="p-4 rounded-lg border border-border bg-card">
+            <div className="flex items-start gap-2">
+              <MapPin className="w-5 h-5 text-blue-500 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-foreground mb-1">Enable your location</p>
+                {geoPermission === 'denied' ? (
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Location permission is blocked by your browser. Go to your browser's Site Settings and allow
+                    Location for this site, then return here and tap the button below.
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Tap the button to allow access to your current location. On iPhone (Safari) and Android (Chrome),
+                    the permission prompt only appears after you interact with the page.
+                  </p>
+                )}
+                <Button onClick={getCurrentLocation} variant="secondary" className="w-full">
+                  Turn On Location
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

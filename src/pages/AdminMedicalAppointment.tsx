@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+                                                                                            import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BackBar } from "@/components/BackBar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,11 +31,47 @@ const AdminMedicalAppointment = () => {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
+    // Fetch appointments with both patient_id and user_id for legacy rows
+    const { data: appts, error } = await supabase
       .from("appointments")
-      .select("id, user_id, doctor_id, appointment_date, appointment_time, status")
+      .select(
+        "id, user_id, patient_id, doctor_id, appointment_date, appointment_time, status, profiles!patient_id(full_name, roll_number)"
+      )
       .order("created_at", { ascending: false });
-    setAppointments(data || []);
+
+    if (error) {
+      console.error("Failed to load appointments:", error.message);
+      setAppointments([]);
+      setLoading(false);
+      return;
+    }
+
+    let enriched = appts || [];
+
+    // For rows without patient-linked profile, try to fetch by user_id
+    const missingUserIds = (enriched || [])
+      .filter((r: any) => !r?.profiles && r?.user_id)
+      .map((r: any) => r.user_id);
+
+    if (missingUserIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, roll_number")
+        .in("user_id", missingUserIds);
+
+      const byUserId = new Map(
+        (profs || []).map((p: any) => [p.user_id, { full_name: p.full_name, roll_number: p.roll_number }])
+      );
+
+      enriched = enriched.map((r: any) => {
+        if (r.profiles) return r;
+        const p = byUserId.get(r.user_id);
+        return p ? { ...r, profiles: p } : r;
+      });
+    }
+
+    console.log("Appointments data:", enriched);
+    setAppointments(enriched);
     setLoading(false);
   };
 
@@ -105,12 +141,10 @@ const AdminMedicalAppointment = () => {
                   <div>
                     <div className="text-sm text-muted-foreground">Student</div>
                     <div className="font-medium">
-                      {(row.student_name && row.student_name.trim()) ? row.student_name : (row._profile?.full_name ? row._profile.full_name : row.user_id?.slice(0,8) + "…")}
-                      {(row.student_roll && row.student_roll.trim()) ? (
-                        <span className="text-muted-foreground"> ( {row.student_roll} )</span>
-                      ) : (row._profile?.roll_number ? (
-                        <span className="text-muted-foreground"> ( {row._profile.roll_number} )</span>
-                      ) : null)}
+                      Student: {row.profiles?.full_name || (row.user_id ? row.user_id.slice(0,8) + "…" : "Unknown")}
+                      {row.profiles?.roll_number ? (
+                        <span className="text-muted-foreground"> ( {row.profiles.roll_number} )</span>
+                      ) : null}
                     </div>
                     <div className="text-sm mt-1">• Doctor: {row.doctor_id}</div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">

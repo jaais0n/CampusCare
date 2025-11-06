@@ -54,7 +54,7 @@ const MobileNav = () => {
   return (
     <>
       {/* SOS Floating Button */}
-      {location.pathname !== "/sos" && (
+      {location.pathname !== "/sos" && !location.pathname.startsWith("/admin") && (
         <div className="fixed bottom-20 right-4 z-50">
           <Link to="/sos" className="block">
             <div className="relative">
