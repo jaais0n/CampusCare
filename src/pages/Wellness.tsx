@@ -324,15 +324,15 @@ const Wellness = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <BackBar />
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 my-6 sm:my-8">
+        <div className="flex items-center justify-between my-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 sm:mb-2">Wellness Programs</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Join fitness classes and wellness activities</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Wellness Programs</h1>
+            <p className="text-muted-foreground">Join fitness classes and wellness activities</p>
           </div>
           {isAdmin && (
-            <Button onClick={createNewProgram} className="bg-gradient-primary hover:shadow-glow w-full sm:w-auto">
+            <Button onClick={createNewProgram} className="bg-gradient-primary hover:shadow-glow">
               <Plus className="w-4 h-4 mr-2" /> Add Program
             </Button>
           )}
@@ -341,28 +341,28 @@ const Wellness = () => {
         {/* Program Categories removed as requested */}
 
         {/* Available Programs */}
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">Available Programs</h2>
-          <div className="grid gap-4 sm:gap-6">
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Available Programs</h2>
+          <div className="grid gap-6">
             {programs.map((program) => (
               <Card key={program.id} className="border-primary/20 hover:shadow-glow transition-all">
-                <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-3 p-4 sm:p-6">
-                  <div className="flex items-start gap-3 w-full sm:w-auto">
-                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                <CardHeader className="flex flex-row items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
                       <span className="flex items-center justify-center w-6 h-6 rounded-md bg-primary/20">
                         <Heart className="w-4 h-4 text-primary" />
                       </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg sm:text-xl font-semibold text-foreground flex items-center gap-2">
+                    <div>
+                      <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
                         {program.name}
                       </CardTitle>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         by {program.instructor_name}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start flex-wrap">
+                  <div className="flex items-start gap-2">
                     <Badge className={getDifficultyColor(program.difficulty_level)}>
                       {program.difficulty_level}
                     </Badge>
@@ -384,67 +384,66 @@ const Wellness = () => {
                     )}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
-                  <p className="text-sm sm:text-base text-muted-foreground">{program.description}</p>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground">{program.description}</p>
                   
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                  <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="truncate">{program.duration_minutes} mins</span>
+                      <Clock className="w-4 h-4 text-primary" />
+                      <span>{program.duration_minutes} mins</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="truncate">{program.current_enrollment}/{program.max_capacity}</span>
+                      <Users className="w-4 h-4 text-primary" />
+                      <span>{program.current_enrollment}/{program.max_capacity}</span>
                     </div>
-                    <div className="flex items-center gap-2 col-span-2 sm:col-span-1">
-                      <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="truncate">{program.location}</span>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <span>{program.location}</span>
                     </div>
-                    <div className="flex items-center gap-2 col-span-2 sm:col-span-1">
-                      <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                      <span className="truncate">{program.schedule_days.join(", ")}</span>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      <span>{program.schedule_days.join(", ")}</span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Schedule:</span>
                       <p className="font-medium">{program.start_time} - {program.end_time}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Instructor:</span>
-                      <p className="font-medium truncate">{program.instructor_qualification}</p>
+                      <p className="font-medium">{program.instructor_qualification}</p>
                     </div>
                   </div>
 
                   {program.equipment_required && (
                     <div>
-                      <span className="text-muted-foreground text-xs sm:text-sm">Equipment needed:</span>
-                      <p className="text-xs sm:text-sm">{program.equipment_required}</p>
+                      <span className="text-muted-foreground text-sm">Equipment needed:</span>
+                      <p className="text-sm">{program.equipment_required}</p>
                     </div>
                   )}
 
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 sm:pt-4">
+                  <div className="flex items-center justify-between pt-4">
                     <div className="flex items-center gap-4">
                       {program.price === 0 && (
                         <Badge className="text-success bg-success/10">Free</Badge>
                       )}
                     </div>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                    <div className="flex items-center gap-2">
                       <Button
                         onClick={() => {
                           if (program.video_url) {
                             window.open(program.video_url, '_blank');
                           }
                         }}
-                        className="bg-gradient-primary hover:shadow-glow w-full sm:w-auto"
-                        size="sm"
+                        className="bg-gradient-primary hover:shadow-glow"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Watch Video
                       </Button>
                       {isAdmin && (
-                        <Button variant="secondary" onClick={() => openEdit(program)} size="sm" className="w-full sm:w-auto">Edit</Button>
+                        <Button variant="secondary" onClick={() => openEdit(program)}>Edit</Button>
                       )}
                     </div>
                   </div>
