@@ -37,6 +37,9 @@ const Admin = () => {
   const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [resolving, setResolving] = useState<Record<string, boolean>>({});
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const livePulseRef = useRef<number | null>(null);
+  const [liveTick, setLiveTick] = useState(0); // triggers small pulse animation when updates arrive
 
   // Auth check (demo admin or supabase role admin). No DB fetching.
   useEffect(() => {
@@ -187,10 +190,12 @@ const Admin = () => {
       }) as any;
       setSosAlerts(merged);
       setIsLoading(false);
+      setLastUpdated(new Date());
     };
 
     fetchSosAlerts();
 
+    // Realtime subscription for instant updates
     const subscription = supabase
       .channel('sos_alerts_channel')
       .on(
@@ -225,12 +230,24 @@ const Admin = () => {
             }
             return [normalized, ...prev].slice(0, 25);
           });
+          setLastUpdated(new Date());
+          // Trigger a small pulse effect in UI
+          if (livePulseRef.current) window.clearTimeout(livePulseRef.current);
+          setLiveTick((t) => t + 1);
+          livePulseRef.current = window.setTimeout(() => setLiveTick((t) => t + 1), 600);
         }
       )
       .subscribe();
 
+    // Fallback polling every 12 seconds in case realtime is disconnected transiently
+    const pollId = window.setInterval(() => {
+      fetchSosAlerts();
+    }, 12000);
+
     return () => {
       supabase.removeChannel(subscription);
+      if (pollId) window.clearInterval(pollId);
+      if (livePulseRef.current) window.clearTimeout(livePulseRef.current);
     };
   }, []);
 
@@ -378,10 +395,21 @@ const Admin = () => {
         {/* Emergency Monitoring Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-4">Emergency Monitoring</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
             {/* Emergency Details */}
-            <Card className="p-4 bg-card border-border">
-              <h3 className="font-medium text-foreground mb-3">Active Alerts</h3>
+            <Card className="p-4 bg-card border-border h-full flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-foreground">Active Alerts</h3>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className={`flex items-center gap-1 ${liveTick % 2 === 0 ? 'opacity-100' : 'opacity-70'} transition-opacity`}>
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span>Live</span>
+              </div>
+              {lastUpdated && (
+                <span>Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              )}
+            </div>
+          </div>
               {unresolved.length === 0 ? (
                 <div>
                   <div className="text-muted-foreground mb-2">No active alerts.</div>
@@ -492,12 +520,14 @@ const Admin = () => {
               )}
             </Card>
             {/* Live Map */}
-            <Card className="p-0 overflow-hidden bg-card border-border">
-              <LiveLocationMap
-                sosAlerts={sosAlerts as any}
-                location={mapCenter}
-                isActive={Boolean(mapCenter)}
-              />
+            <Card className="p-0 overflow-hidden bg-card border-border h-full flex">
+              <div className="h-full min-h-[420px] w-full">
+                <LiveLocationMap
+                  sosAlerts={sosAlerts as any}
+                  location={mapCenter}
+                  isActive={Boolean(mapCenter)}
+                />
+              </div>
             </Card>
           </div>
         </div>

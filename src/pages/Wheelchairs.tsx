@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Activity, Calendar, Clock, MapPin, Plus, Settings, Edit, Trash2 } from "lucide-react";
 import { BackBar } from "@/components/BackBar";
 import type { User as AuthUser } from "@supabase/supabase-js";
+import { Loader, SkeletonCard } from "@/components/ui/loader";
 
 interface WheelchairBooking {
   id: string;
@@ -27,6 +28,7 @@ const Wheelchairs = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [bookings, setBookings] = useState<WheelchairBooking[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [availableCount, setAvailableCount] = useState(20); // Counter-based availability
   const [editingBooking, setEditingBooking] = useState<WheelchairBooking | null>(null);
@@ -105,6 +107,7 @@ const Wheelchairs = () => {
   const fetchBookings = async () => {
     if (!user) return;
     
+    setIsLoadingBookings(true);
     try {
       const { data, error } = await supabase
         .from('wheelchair_bookings')
@@ -131,6 +134,8 @@ const Wheelchairs = () => {
         variant: "destructive",
       });
       setBookings([]);
+    } finally {
+      setIsLoadingBookings(false);
     }
   };
 
@@ -503,7 +508,13 @@ const Wheelchairs = () => {
         {/* My Bookings */}
         <div className="mt-8">
           <h2 className="text-xl font-semibold text-foreground mb-4">My Bookings</h2>
-          {bookings.length > 0 ? (
+          {isLoadingBookings ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : bookings.length > 0 ? (
             <div className="space-y-4">
               {bookings.map((booking) => (
                 <Card key={booking.id} className="hover:shadow-md transition-shadow">

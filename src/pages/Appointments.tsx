@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, Stethoscope, Plus, Pencil, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { Loader, SkeletonCard } from "@/components/ui/loader";
 
 interface Doctor {
   id: string;
@@ -32,6 +33,7 @@ interface Appointment {
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   // Single doctor as requested
   const [doctors] = useState<Doctor[]>([
     { id: '1', name: 'Dr. David Mathew', specialization: 'General Medicine' },
@@ -62,26 +64,37 @@ const Appointments = () => {
   // Load existing appointments for the signed-in user
   useEffect(() => {
     const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-      if (!userId) return;
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('id, appointment_date, appointment_time, status, doctor_id')
-        .eq('user_id', userId)
-        .order('appointment_date', { ascending: false })
-        .order('appointment_time', { ascending: false });
-      if (error) {
-        toast({ title: 'Load failed', description: error.message, variant: 'destructive' });
-      } else if (data) {
-        const mapped: Appointment[] = data.map((row: any) => ({
-          id: row.id,
-          appointment_date: row.appointment_date,
-          appointment_time: row.appointment_time,
-          status: (['scheduled','completed','cancelled'].includes(row.status) ? row.status : 'scheduled') as Appointment['status'],
-          doctors: doctors[0] || { id: row.doctor_id, name: 'Campus Doctor', specialization: 'General Medicine' },
-        }));
-        setAppointments(mapped);
+      setIsLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        if (!userId) {
+          setIsLoading(false);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('appointments')
+          .select('id, appointment_date, appointment_time, status, doctor_id')
+          .eq('user_id', userId)
+          .order('appointment_date', { ascending: false })
+          .order('appointment_time', { ascending: false });
+        if (error) {
+          toast({ title: 'Load failed', description: error.message, variant: 'destructive' });
+        } else if (data) {
+          const mapped: Appointment[] = data.map((row: any) => ({
+            id: row.id,
+            appointment_date: row.appointment_date,
+            appointment_time: row.appointment_time,
+            status: (['scheduled','completed','cancelled'].includes(row.status) ? row.status : 'scheduled') as Appointment['status'],
+            doctors: doctors[0] || { id: row.doctor_id, name: 'Campus Doctor', specialization: 'General Medicine' },
+          }));
+          setAppointments(mapped);
+        }
+      } catch (error) {
+        console.error('Error loading appointments:', error);
+        toast({ title: 'Error', description: 'Failed to load appointments', variant: 'destructive' });
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -349,7 +362,13 @@ const Appointments = () => {
         </div>
 
         <div className="space-y-4">
-          {appointments.length === 0 ? (
+          {isLoading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : appointments.length === 0 ? (
             <Card className="text-center p-8 bg-card border-border">
               <Calendar className="mx-auto h-10 w-10 text-muted-foreground mb-2" />
               <h3 className="text-lg font-medium text-foreground">No Appointments</h3>

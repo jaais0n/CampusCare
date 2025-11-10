@@ -85,13 +85,43 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ location, isActive, s
 
     if (latLngs.length > 0) {
       const bounds = L.latLngBounds(latLngs);
-      leafletMapRef.current?.fitBounds(bounds, { padding: [50, 50] });
+      leafletMapRef.current?.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
     } else if (!location && leafletMapRef.current) {
       leafletMapRef.current.setView([20.5937, 78.9629], 5);
     }
+
+    // Ensure Leaflet recalculates size after React paints
+    setTimeout(() => {
+      try { leafletMapRef.current?.invalidateSize(); } catch {}
+    }, 0);
+
+    // Recalculate on window resize
+    const onWindowResize = () => {
+      try { leafletMapRef.current?.invalidateSize(); } catch {}
+    };
+    window.addEventListener('resize', onWindowResize);
+
+    // Recalculate when container size changes (e.g., left column grows)
+    let ro: ResizeObserver | null = null;
+    const container = mapContainerRef.current;
+    if (container && 'ResizeObserver' in window) {
+      let raf: number | null = null;
+      ro = new ResizeObserver(() => {
+        if (raf) cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          try { leafletMapRef.current?.invalidateSize(); } catch {}
+        });
+      });
+      ro.observe(container);
+    }
+
+    return () => {
+      window.removeEventListener('resize', onWindowResize);
+      if (ro && container) ro.unobserve(container);
+    };
   }, [location, isActive, sosAlerts]);
 
-  return <div ref={mapContainerRef} id="map" className="w-full h-96 rounded-lg" style={{ minHeight: '300px' }} />;
+  return <div ref={mapContainerRef} id="map" className="w-full h-full rounded-lg" />;
 };
 
 export default LiveLocationMap;

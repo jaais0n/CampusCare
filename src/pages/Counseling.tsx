@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Brain, Calendar, Clock, MessageSquare, Plus, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { BackBar } from "@/components/BackBar";
+import { Loader, SkeletonCard } from "@/components/ui/loader";
 
 interface Counselor {
   id: string;
@@ -38,6 +39,7 @@ interface CounselingBooking {
 
 const Counseling = () => {
   const [bookings, setBookings] = useState<CounselingBooking[]>([]);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   // Single counselor similar to medical
   const [counselors] = useState<Counselor[]>([
     { id: '1', name: 'Dr. Anita Verma', specialization: ['Counseling Psychologist'] }
@@ -121,26 +123,34 @@ const Counseling = () => {
 
   const fetchBookings = async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from('counseling_bookings')
-      .select('id, preferred_date, preferred_time, confirmed_date, confirmed_time, status')
-      .eq('user_id', user.id)
-      .order('preferred_date', { ascending: false });
+    setIsLoadingBookings(true);
+    try {
+      const { data, error } = await supabase
+        .from('counseling_bookings')
+        .select('id, preferred_date, preferred_time, confirmed_date, confirmed_time, status')
+        .eq('user_id', user.id)
+        .order('preferred_date', { ascending: false });
 
-    if (error) {
-      toast({ title: 'Error', description: 'Failed to fetch bookings', variant: 'destructive' });
-    } else {
-      // Map to the CounselingBooking shape with a synthetic counselor
-      const mapped = (data || []).map((row: any) => ({
-        id: row.id,
-        preferred_date: row.preferred_date,
-        preferred_time: row.preferred_time,
-        confirmed_date: row.confirmed_date,
-        confirmed_time: row.confirmed_time,
-        status: row.status,
-        counselors: { id: '1', name: 'Dr. Anita Verma', specialization: ['Counseling Psychologist'] },
-      } as unknown as CounselingBooking));
-      setBookings(mapped);
+      if (error) {
+        toast({ title: 'Error', description: 'Failed to fetch bookings', variant: 'destructive' });
+      } else {
+        // Map to the CounselingBooking shape with a synthetic counselor
+        const mapped = (data || []).map((row: any) => ({
+          id: row.id,
+          preferred_date: row.preferred_date,
+          preferred_time: row.preferred_time,
+          confirmed_date: row.confirmed_date,
+          confirmed_time: row.confirmed_time,
+          status: row.status,
+          counselors: { id: '1', name: 'Dr. Anita Verma', specialization: ['Counseling Psychologist'] },
+        } as unknown as CounselingBooking));
+        setBookings(mapped);
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      toast({ title: 'Error', description: 'An unexpected error occurred', variant: 'destructive' });
+    } finally {
+      setIsLoadingBookings(false);
     }
   };
 
@@ -302,7 +312,13 @@ const Counseling = () => {
             </DialogContent>
           </Dialog>
         </div>
-        {bookings.length === 0 ? (
+        {isLoadingBookings ? (
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        ) : bookings.length === 0 ? (
           <div className="text-center py-12">
             <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="mt-2 text-sm font-medium text-foreground">No counseling sessions</h3>

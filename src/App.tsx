@@ -1,9 +1,11 @@
 import { Toaster } from "@/components/ui/toaster";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { PageLoader } from "@/components/ui/loader";
+import NetworkStatus from "@/components/NetworkStatus";
 import Header from "@/components/Header";
 import MobileNav from "@/components/MobileNav";
 import Index from "./pages/Index";
@@ -21,7 +23,16 @@ import AdminWheelchairs from "./pages/AdminWheelchairs";
 import AdminMedicalAppointment from "./pages/AdminMedicalAppointment";
 import AdminLiveMap from "./pages/AdminLiveMap";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -37,6 +48,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <NetworkStatus />
       <BrowserRouter>
         <ScrollToTop />
         <Header />

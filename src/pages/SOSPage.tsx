@@ -286,10 +286,12 @@ const SOSPage = () => {
       {/* Interactive Live Location Map */}
       {location && (
         <div className="mt-6 w-full max-w-md">
-          <LiveLocationMap 
-            location={location}
-            isActive={isSendingAlert}
-          />
+          <div className="h-64 w-full">
+            <LiveLocationMap 
+              location={location}
+              isActive={isSendingAlert}
+            />
+          </div>
         </div>
       )}
 
