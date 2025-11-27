@@ -11,18 +11,18 @@ const Index = () => {
 
   const go = async (path: string, title: string) => {
     if (path === "/sos") {
-      navigate(path);
+      navigate(path, { replace: true });
       return;
     }
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate("/auth", { state: { message: `You must be logged in to access ${title}.` } });
+        navigate("/auth", { replace: true, state: { message: `You must be logged in to access ${title}.` } });
         return;
       }
-      navigate(path);
+      navigate(path, { replace: true });
     } catch {
-      navigate(path);
+      navigate(path, { replace: true });
     }
   };
 
@@ -53,10 +53,10 @@ const Index = () => {
                   emergency support, and wellness programs.
                 </p>
                 <div className="flex space-x-4">
-                  <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10">
+                  <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10" onClick={() => go('/privacy-policy', 'Privacy Policy')}>
                     Privacy Policy
                   </Button>
-                  <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10">
+                  <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10" onClick={() => go('/terms-of-service', 'Terms of Service')}>
                     Terms of Service
                   </Button>
                 </div>

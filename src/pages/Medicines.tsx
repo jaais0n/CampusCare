@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BackBar } from "@/components/BackBar";
+import { Loader, SkeletonCard } from "@/components/ui/loader";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface Medicine {
@@ -52,11 +53,22 @@ interface Order {
 const Medicines = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<{
+    full_name: string;
+    email: string;
+    roll_number: string | null;
+    course: string | null;
+    department: string | null;
+    phone: string | null;
+  } | null>(null);
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isLoadingMedicines, setIsLoadingMedicines] = useState(true);
+  const [isLoadingCart, setIsLoadingCart] = useState(true);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
   
@@ -65,7 +77,55 @@ const Medicines = () => {
 
   const { toast } = useToast();
 
+  // Fetch user profile (same approach as Header.tsx)
+  const fetchUserProfile = async (userId: string, userEmail: string, userMetadata: any) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, email, roll_number, course, department, phone")
+        .eq("id", userId);
+      
+      if (!error && data) {
+        const profile = Array.isArray(data) ? data[0] : data;
+        let name = profile?.full_name || "";
+        
+        // Fallback: check user_metadata, then email prefix
+        if (!name) {
+          const metaName = userMetadata?.full_name as string | undefined;
+          const fallbackFromMeta = (metaName && metaName.trim()) ? metaName.trim() : null;
+          const fallbackFromEmail = userEmail ? userEmail.split("@")[0] : null;
+          name = fallbackFromMeta || fallbackFromEmail || "";
+        }
+        
+        setUserProfile({
+          full_name: name,
+          email: profile?.email || userEmail || '',
+          roll_number: profile?.roll_number || null,
+          course: profile?.course || null,
+          department: profile?.department || null,
+          phone: profile?.phone || null
+        });
+      } else {
+        // Fallback from user metadata/email
+        const metaName = userMetadata?.full_name as string | undefined;
+        setUserProfile({
+          full_name: metaName || userEmail?.split('@')[0] || '',
+          email: userEmail || '',
+          roll_number: null,
+          course: null,
+          department: null,
+          phone: null
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+    }
+  };
+
   useEffect(() => {
+    let ordersSubscription: ReturnType<typeof supabase.channel> | null = null;
+    let medicinesSubscription: ReturnType<typeof supabase.channel> | null = null;
+
     const checkSessionAndFetchData = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
@@ -74,9 +134,54 @@ const Medicines = () => {
       }
 
       setUser(session.user);
+      fetchUserProfile(session.user.id, session.user.email || '', session.user.user_metadata);
       fetchMedicines();
       fetchCartItems(session.user);
       fetchOrders(session.user);
+
+      // Subscribe to order status changes for this user
+      ordersSubscription = supabase
+        .channel('user-orders-changes')
+        .on('postgres_changes', 
+          { event: 'UPDATE', schema: 'public', table: 'medicine_orders', filter: `user_id=eq.${session.user.id}` },
+          (payload) => {
+            const updatedOrder = payload.new as Order;
+            setOrders(prev => prev.map(order => 
+              order.id === updatedOrder.id ? { ...order, ...updatedOrder } : order
+            ));
+            
+            // Show toast notification for status changes
+            const statusMessages: Record<string, string> = {
+              'approved': '✅ Your order has been approved!',
+              'processing': '📦 Your order is being prepared',
+              'ready': '🎉 Your order is ready for pickup!',
+              'delivered': '✅ Your order has been delivered',
+              'cancelled': '❌ Your order was cancelled'
+            };
+            
+            if (statusMessages[updatedOrder.status]) {
+              toast({
+                title: "Order Update",
+                description: statusMessages[updatedOrder.status],
+              });
+            }
+          }
+        )
+        .subscribe();
+
+      // Subscribe to medicine stock changes (for real-time availability)
+      medicinesSubscription = supabase
+        .channel('medicines-stock-changes')
+        .on('postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'medicines' },
+          (payload) => {
+            const updatedMedicine = payload.new as Medicine;
+            setMedicines(prev => prev.map(med => 
+              med.id === updatedMedicine.id ? updatedMedicine : med
+            ));
+          }
+        )
+        .subscribe();
     };
 
     checkSessionAndFetchData();
@@ -89,41 +194,81 @@ const Medicines = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (ordersSubscription) supabase.removeChannel(ordersSubscription);
+      if (medicinesSubscription) supabase.removeChannel(medicinesSubscription);
+    };
   }, [navigate]);
 
   const fetchMedicines = async () => {
-    const { data, error } = await supabase.from("medicines").select("*").order("name");
-    if (error) {
-      toast({ title: "Error", description: "Failed to fetch medicines", variant: "destructive" });
-    } else {
-      setMedicines(data || []);
+    setIsLoadingMedicines(true);
+    try {
+      const { data, error } = await supabase.from("medicines").select("*").order("name");
+      if (error) {
+        toast({ title: "Error", description: "Failed to fetch medicines", variant: "destructive" });
+      } else {
+        setMedicines(data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching medicines:", err);
+      toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" });
+    } finally {
+      setIsLoadingMedicines(false);
     }
   };
 
   const fetchCartItems = async (currentUser: SupabaseUser) => {
     if (!currentUser) return;
-    const { data, error } = await supabase.from("cart_items").select(`*, medicines (*)`).eq("user_id", currentUser.id);
-    if (error) {
-      toast({ title: "Error", description: "Failed to fetch cart items", variant: "destructive" });
-    } else {
-      setCartItems(data || []);
+    setIsLoadingCart(true);
+    try {
+      const { data, error } = await supabase.from("cart_items").select(`*, medicines (*)`).eq("user_id", currentUser.id);
+      if (error) {
+        toast({ title: "Error", description: "Failed to fetch cart items", variant: "destructive" });
+      } else {
+        setCartItems(data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching cart:", err);
+    } finally {
+      setIsLoadingCart(false);
     }
   };
 
   const fetchOrders = async (currentUser: SupabaseUser) => {
     if (!currentUser) return;
-    const { data, error } = await supabase.from("medicine_orders").select(`*, order_items (quantity, unit_price, medicines (*))`).eq("user_id", currentUser.id).order("ordered_at", { ascending: false });
-    if (error) {
-      toast({ title: "Error", description: "Failed to fetch orders", variant: "destructive" });
-    } else {
-      setOrders(data || []);
+    setIsLoadingOrders(true);
+    try {
+      const { data, error } = await supabase.from("medicine_orders").select(`*, order_items (quantity, unit_price, medicines (*))`).eq("user_id", currentUser.id).order("ordered_at", { ascending: false });
+      if (error) {
+        toast({ title: "Error", description: "Failed to fetch orders", variant: "destructive" });
+      } else {
+        setOrders(data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    } finally {
+      setIsLoadingOrders(false);
     }
   };
 
   const addToCart = async (medicine: Medicine) => {
     if (!user) return;
+    
+    // Check if stock is available
+    if (medicine.stock_quantity <= 0) {
+      toast({ title: "Out of Stock", description: `${medicine.name} is currently out of stock`, variant: "destructive" });
+      return;
+    }
+    
     const existingItem = cartItems.find(item => item.medicine_id === medicine.id);
+    
+    // Check if adding more would exceed stock
+    if (existingItem && existingItem.quantity >= medicine.stock_quantity) {
+      toast({ title: "Stock Limit", description: `Only ${medicine.stock_quantity} units available`, variant: "destructive" });
+      return;
+    }
+    
     if (existingItem) {
       const { error } = await supabase.from("cart_items").update({ quantity: existingItem.quantity + 1 }).eq("id", existingItem.id);
       if (error) {
@@ -209,6 +354,15 @@ const Medicines = () => {
       return;
     }
     
+    // Update stock quantity for each medicine
+    for (const item of cartItems) {
+      const newStock = item.medicines.stock_quantity - item.quantity;
+      await supabase
+        .from("medicines")
+        .update({ stock_quantity: Math.max(0, newStock) })
+        .eq("id", item.medicine_id);
+    }
+    
     const { error: clearError } = await supabase.from("cart_items").delete().eq("user_id", user.id);
     
     if (clearError) {
@@ -222,6 +376,7 @@ const Medicines = () => {
     setDeliveryInstructions("");
     fetchCartItems(user);
     fetchOrders(user);
+    fetchMedicines(); // Refresh medicines to show updated stock
     setLoading(false);
   };
 
@@ -254,7 +409,7 @@ const Medicines = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        <BackBar label="Back" to="/" />
+        <BackBar label="Back" to="/" desktopOnly />
         
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
           <div>
@@ -353,10 +508,46 @@ const Medicines = () => {
                       <div className="flex justify-between font-semibold mb-4">
                         <span>Total: ₹{cartTotal.toFixed(2)}</span>
                       </div>
+                      
+                      {/* Student Details Section */}
+                      <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                        <h4 className="font-medium text-sm mb-2">Student Details</h4>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Name:</span>
+                            <p className="font-medium uppercase">{userProfile?.full_name || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Roll No:</span>
+                            <p className="font-medium uppercase">{userProfile?.roll_number || user?.email?.split('@')[0] || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Email:</span>
+                            <p className="font-medium truncate">{userProfile?.email || user?.email || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Course:</span>
+                            <p className="font-medium uppercase">{userProfile?.course || 'N/A'}</p>
+                          </div>
+                          {userProfile?.department && (
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">Department:</span>
+                              <p className="font-medium uppercase">{userProfile.department}</p>
+                            </div>
+                          )}
+                          {userProfile?.phone && (
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">Phone:</span>
+                              <p className="font-medium">{userProfile.phone}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="address">Delivery Address</Label>
-                          <Textarea id="address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder="Enter your delivery address..." required />
+                          <Label htmlFor="address">Delivery Address / Room Number</Label>
+                          <Textarea id="address" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} placeholder="Enter room number or delivery location..." required />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="instructions">Delivery Instructions (Optional)</Label>
@@ -380,7 +571,17 @@ const Medicines = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMedicines.map((medicine) => (
+          {isLoadingMedicines ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : (
+            filteredMedicines.map((medicine) => (
             <Card key={medicine.id} className="border-primary/20 hover:shadow-glow transition-all">
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -442,9 +643,10 @@ const Medicines = () => {
                 )}
               </CardContent>
             </Card>
-          ))}
+          ))
+          )}
         </div>
-        {filteredMedicines.length === 0 && (
+        {!isLoadingMedicines && filteredMedicines.length === 0 && (
           <Card className="text-center py-12">
             <CardContent>
               <Pill className="w-12 h-12 text-muted-foreground mx-auto mb-4" />

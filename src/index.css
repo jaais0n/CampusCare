@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -82,14 +82,22 @@
 @layer base {
   * {
     @apply border-border;
+    outline: none;
   }
 
   body {
     @apply bg-background text-foreground font-sans;
+    margin: 0;
+    padding: 0;
   }
   
   html {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  /* Remove focus outlines, use ring instead */
+  *:focus {
+    outline: none;
   }
 }
 
@@ -133,6 +141,25 @@
       transform: scale(1.05);
       box-shadow: 0 0 0 10px hsl(var(--destructive) / 0);
     }
+  }
+
+  /* Floating animation for illustrations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  /* Gradient radial for hero background */
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-from) 0%, var(--tw-gradient-to) 70%);
   }
 }
 

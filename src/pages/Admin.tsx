@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Accessibility, Pill, HeartPulse, AlertTriangle, ArrowRight, ClipboardList, Pencil, Trash2, Calendar } from "lucide-react";
-import { BackBar } from "@/components/BackBar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import LiveLocationMap from "@/components/LiveLocationMap";
 
@@ -40,6 +39,42 @@ const Admin = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const livePulseRef = useRef<number | null>(null);
   const [liveTick, setLiveTick] = useState(0); // triggers small pulse animation when updates arrive
+  
+  // Alert sound for new SOS notifications
+  const alertAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlayingSound, setIsPlayingSound] = useState(false);
+  const previousAlertCountRef = useRef<number>(0);
+
+  // Play alert sound
+  const playAlertSound = () => {
+    if (alertAudioRef.current) {
+      alertAudioRef.current.loop = true;
+      alertAudioRef.current.volume = 1.0;
+      alertAudioRef.current.play()
+        .then(() => setIsPlayingSound(true))
+        .catch(error => console.error("Error playing audio:", error));
+    }
+  };
+
+  // Stop alert sound
+  const stopAlertSound = () => {
+    if (alertAudioRef.current) {
+      alertAudioRef.current.pause();
+      alertAudioRef.current.currentTime = 0;
+      alertAudioRef.current.loop = false;
+      setIsPlayingSound(false);
+    }
+  };
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (alertAudioRef.current) {
+        alertAudioRef.current.pause();
+        alertAudioRef.current.currentTime = 0;
+      }
+    };
+  }, []);
 
   // Auth check (demo admin or supabase role admin). No DB fetching.
   useEffect(() => {
@@ -78,7 +113,7 @@ const Admin = () => {
     { icon: Calendar, title: "Medical Appointment", href: "/admin/appointments", desc: "Create, reassign, and close" },
     { icon: MessageCircle, title: "Counseling", href: "/admin/counseling", desc: "Track sessions & outcomes" },
     { icon: Accessibility, title: "Wheelchairs", href: "/admin/wheelchairs", desc: "Inventory & bookings" },
-    { icon: Pill, title: "Medicines", href: "/medicines", desc: "Orders & stock" },
+    { icon: Pill, title: "Medicines", href: "/admin/medicines", desc: "Orders & stock" },
     { icon: HeartPulse, title: "Wellness", href: "/wellness", desc: "Programs & enrollments" },
     
   ];
@@ -228,6 +263,10 @@ const Admin = () => {
               copy[idx] = normalized;
               return copy;
             }
+            // New alert inserted - play sound!
+            if (payload.eventType === 'INSERT' && !normalized.resolved) {
+              playAlertSound();
+            }
             return [normalized, ...prev].slice(0, 25);
           });
           setLastUpdated(new Date());
@@ -334,8 +373,29 @@ const Admin = () => {
 
   return (
     <section className="min-h-screen bg-background px-4 py-8">
+      {/* Hidden audio element for SOS alert sound */}
+      <audio
+        ref={alertAudioRef}
+        src="/Alertsound.mp3"
+        preload="auto"
+        loop
+        style={{ display: 'none' }}
+      />
+      
+      {/* Stop Sound Button - shows when sound is playing */}
+      {isPlayingSound && (
+        <div className="fixed top-4 right-4 z-50">
+          <Button
+            onClick={stopAlertSound}
+            variant="destructive"
+            className="animate-pulse shadow-lg gap-2"
+          >
+            🔊 Stop Alert Sound
+          </Button>
+        </div>
+      )}
+      
       <div className="max-w-7xl mx-auto">
-        <BackBar label="Back" to="/" />
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div>

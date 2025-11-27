@@ -1,4 +1,4 @@
-                                                                                            import { useEffect, useState } from "react";
+                                                                                            import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BackBar } from "@/components/BackBar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar, Clock, Pencil, Trash2 } from "lucide-react";
+import { useNotificationSound } from "@/hooks/use-notification-sound";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminMedicalAppointment = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -14,6 +16,9 @@ const AdminMedicalAppointment = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [editTime, setEditTime] = useState("");
+  const { playNotification } = useNotificationSound();
+  const { toast } = useToast();
+  const initialLoadRef = useRef(true);
 
   const statusClass = (s: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | string) => {
     switch (s) {
@@ -75,7 +80,44 @@ const AdminMedicalAppointment = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    load();
+    
+    // Realtime subscription for new/updated appointments
+    const subscription = supabase
+      .channel('admin_appointments_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        (payload) => {
+          // Skip notification on initial load
+          if (initialLoadRef.current) return;
+          
+          if (payload.eventType === 'INSERT') {
+            playNotification();
+            toast({
+              title: "New Appointment!",
+              description: "A new appointment has been booked",
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            playNotification();
+            toast({
+              title: "Appointment Updated",
+              description: "An appointment has been modified",
+            });
+          }
+          load(); // Refresh the list
+        }
+      )
+      .subscribe();
+
+    // Mark initial load complete after first load
+    setTimeout(() => { initialLoadRef.current = false; }, 2000);
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
 
   const openEdit = (row: any) => {
     setEditing(row);
@@ -107,7 +149,7 @@ const AdminMedicalAppointment = () => {
   return (
     <section className="min-h-screen bg-background px-4 py-8">
       <div className="max-w-7xl mx-auto">
-        <BackBar label="Back" to="/admin" />
+        <BackBar label="Back" to="/admin" desktopOnly />
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Medical Appointment</h1>

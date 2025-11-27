@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Activity, Calendar, Clock, User, MapPin, Settings, Edit, Trash2 } from "lucide-react";
 import { BackBar } from "@/components/BackBar";
+import { useNotificationSound } from "@/hooks/use-notification-sound";
 
 interface Wheelchair {
   id: string;
@@ -50,6 +51,8 @@ const AdminWheelchairs = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [authorized, setAuthorized] = useState(false);
   const { toast } = useToast();
+  const { playNotification } = useNotificationSound();
+  const initialLoadRef = useRef(true);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -62,6 +65,41 @@ const AdminWheelchairs = () => {
         if (isAdmin) {
           setAuthorized(true);
           fetchBookings();
+          
+          // Realtime subscription for wheelchair bookings
+          const subscription = supabase
+            .channel('admin_wheelchair_channel')
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: 'wheelchair_bookings' },
+              (payload) => {
+                // Skip notification on initial load
+                if (initialLoadRef.current) return;
+                
+                if (payload.eventType === 'INSERT') {
+                  playNotification();
+                  toast({
+                    title: "New Wheelchair Booking!",
+                    description: "A new wheelchair has been requested",
+                  });
+                } else if (payload.eventType === 'UPDATE') {
+                  playNotification();
+                  toast({
+                    title: "Booking Updated",
+                    description: "A wheelchair booking has been modified",
+                  });
+                }
+                fetchBookings(); // Refresh the list
+              }
+            )
+            .subscribe();
+
+          // Mark initial load complete after first load
+          setTimeout(() => { initialLoadRef.current = false; }, 2000);
+
+          return () => {
+            supabase.removeChannel(subscription);
+          };
         } else {
           navigate("/auth", { replace: true });
         }
@@ -271,7 +309,7 @@ const AdminWheelchairs = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        <BackBar label="Back to Admin" to="/admin" />
+        <BackBar label="Back to Admin" to="/admin" desktopOnly />
         
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Wheelchair Management</h1>

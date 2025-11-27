@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Mail, Lock, User, Phone, BookOpen, IdCard } from "lucide-react";
+import { Heart, Mail, Lock, User, Phone, BookOpen, IdCard, Eye, EyeOff } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import type { Session } from "@supabase/supabase-js";
 
 const Auth = () => {
@@ -16,6 +17,9 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -86,34 +90,30 @@ const Auth = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         console.log('Signed In User:', session.user);
-        // Check if profile exists, if not, create a basic one
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .single();
-    
-        if (profileError && profileError.code === 'PGRST116') { // No rows found
-          console.log('No profile found for user, creating one.');
-          const { error: upsertError } = await supabase.from('profiles').upsert({
-            user_id: session.user.id,
-            full_name: session.user.email?.split('@')[0] || 'New User',
-            email: session.user.email,
-            role: 'student', // Default role
-          });
-          if (upsertError) {
-            console.error('Error creating profile on sign-in:', upsertError);
-            toast({ title: "Profile Creation Failed", description: upsertError.message, variant: "destructive" });
-          } else {
-            console.log('Profile successfully created on sign-in.');
-          }
-        } else if (profileError) {
-          console.error('Error checking profile on sign-in:', profileError);
+        const metadata = session.user.user_metadata as any;
+        
+        // Always sync profile with user_metadata on sign-in
+        const { error: upsertError } = await supabase.from('profiles').upsert({
+          id: session.user.id,
+          user_id: session.user.id,
+          email: session.user.email,
+          full_name: metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          phone: metadata?.phone || null,
+          role: metadata?.role || 'student',
+          roll_number: metadata?.roll_number || null,
+          course: metadata?.course || null,
+          department: metadata?.department || null,
+          faculty_id: metadata?.faculty_id || null,
+          designation: metadata?.designation || null,
+        } as any, { onConflict: 'id' });
+        
+        if (upsertError) {
+          console.error('Error syncing profile on sign-in:', upsertError);
         } else {
-          console.log('Profile already exists for user.', profileData);
+          console.log('Profile synced on sign-in.');
         }
 
-        let role: string | undefined = (session.user.user_metadata as any)?.role;
+        let role: string | undefined = metadata?.role;
         toast({ title: "Welcome back!" });
         const r = (role || '').toLowerCase();
         if (r === 'admin') {
@@ -188,6 +188,8 @@ const Auth = () => {
         // Best-effort create/update profile row (RLS allows self-upsert)
         const { error: upsertErr } = await supabase.from('profiles').upsert({
           id: userId,
+          user_id: userId,
+          email: email,
           full_name: fullName,
           phone,
           role,
@@ -196,9 +198,10 @@ const Auth = () => {
           department,
           faculty_id: facultyId,
           designation,
-        } as any);
+        } as any, { onConflict: 'id' });
         if (upsertErr) {
           // Non-blocking warning
+          console.error('Profile upsert error:', upsertErr);
           toast({ title: "Signed up (profile pending)", description: upsertErr.message });
         }
 
@@ -260,15 +263,24 @@ const Auth = () => {
                       <Lock className="w-4 h-4" />
                       Password
                     </Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="bg-background/50 border-border focus:border-primary"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signin-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="bg-background/50 border-border focus:border-primary pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <Button 
@@ -278,7 +290,14 @@ const Auth = () => {
                   >
                     {loading ? "Signing In..." : "Sign In"}
                   </Button>
-                  {/* Removed demo credentials hint */}
+                  
+                  <button
+                    type="button"
+                    onClick={() => setForgotPasswordOpen(true)}
+                    className="w-full text-sm text-primary hover:text-primary/80 underline-offset-4 hover:underline transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
                 </form>
               </TabsContent>
 
@@ -336,15 +355,24 @@ const Auth = () => {
                       <Lock className="w-4 h-4" />
                       Password
                     </Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="bg-background/50 border-border focus:border-primary"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showSignupPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        className="bg-background/50 border-border focus:border-primary pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword(!showSignupPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Role selection removed: only Student accounts can be created here */}
@@ -409,6 +437,42 @@ const Auth = () => {
 
         {/* removed vendor-specific attribution */}
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+        <DialogContent className="bg-card border-primary/20">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <Mail className="w-5 h-5 text-primary" />
+              Forgot Password?
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Please contact the administrator to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="bg-secondary/30 p-4 rounded-lg border border-border">
+              <p className="text-sm text-foreground mb-2">Contact Administrator:</p>
+              <a 
+                href="mailto:support@campuscare.edu" 
+                className="text-primary hover:underline font-medium flex items-center gap-2"
+              >
+                <Mail className="w-4 h-4" />
+                support@campuscare.edu
+              </a>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Please include your registered email address and full name in your request.
+            </p>
+            <Button 
+              onClick={() => setForgotPasswordOpen(false)}
+              className="w-full bg-gradient-primary"
+            >
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

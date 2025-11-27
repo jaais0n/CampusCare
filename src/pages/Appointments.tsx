@@ -317,7 +317,7 @@ const Appointments = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        <BackBar label="Back" to="/" />
+        <BackBar label="Back" to="/" desktopOnly />
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold">Medical Appointment</h1>

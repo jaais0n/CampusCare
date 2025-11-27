@@ -136,6 +136,39 @@ const SOSPage = () => {
 
 
 
+  const playAlertSound = () => {
+    if (alertAudioRef.current) {
+      alertAudioRef.current.loop = true;
+      alertAudioRef.current.volume = 1.0;
+      const playPromise = alertAudioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log("Audio playing successfully");
+            setIsPlayingSound(true);
+          })
+          .catch(error => {
+            console.error("Error playing audio:", error);
+            // Try playing on user interaction
+            toast({
+              title: "Sound Alert",
+              description: "Tap anywhere to enable emergency sound",
+              variant: "destructive",
+            });
+          });
+      }
+    }
+  };
+
+  const stopAlertSound = () => {
+    if (alertAudioRef.current) {
+      alertAudioRef.current.pause();
+      alertAudioRef.current.currentTime = 0;
+      alertAudioRef.current.loop = false;
+      setIsPlayingSound(false);
+    }
+  };
+
   const sendEmergencyAlert = async () => {
     setIsSendingAlert(true);
     try {
@@ -181,9 +214,9 @@ const SOSPage = () => {
       }
       console.log("Alert data inserted successfully.");
 
-      setIsPlayingSound(true); // Start playing sound after alert is sent
+      // Play alert sound immediately after successful alert
+      playAlertSound();
 
-      // window.open('tel:112', '_blank');
       toast({ title: "Emergency Alert Sent!", description: "Help is on the way. Stay calm." });
 
     } catch (error: any) {
@@ -202,20 +235,15 @@ const SOSPage = () => {
     setShowWarningPopup(true);
   };
 
+  // Cleanup audio on unmount
   useEffect(() => {
-    if (alertAudioRef.current) {
-      if (isPlayingSound) {
-        console.log("Attempting to play audio...");
-        alertAudioRef.current.play().catch(error => {
-          console.error("Error playing audio:", error);
-        });
-      } else {
-        console.log("Pausing audio...");
+    return () => {
+      if (alertAudioRef.current) {
         alertAudioRef.current.pause();
         alertAudioRef.current.currentTime = 0;
       }
-    }
-  }, [isPlayingSound]);
+    };
+  }, []);
 
   return (
     <div className={`min-h-screen bg-background flex flex-col items-center justify-center p-4 text-foreground ${isSendingAlert ? 'animate-alert-flash' : ''} ${showWarningPopup ? 'filter blur-sm' : ''}`}>
@@ -224,9 +252,22 @@ const SOSPage = () => {
         ref={alertAudioRef}
         src="/Alertsound.mp3"
         preload="auto"
-        onEnded={() => setIsPlayingSound(false)} // Stop playing sound when it ends
+        loop
         style={{ display: 'none' }}
       />
+      
+      {/* Stop Sound Button - shows when sound is playing */}
+      {isPlayingSound && (
+        <div className="fixed top-4 right-4 z-50">
+          <Button
+            onClick={stopAlertSound}
+            variant="destructive"
+            className="animate-pulse shadow-lg"
+          >
+            🔊 Stop Alert Sound
+          </Button>
+        </div>
+      )}
       
       
       <div className="text-center mb-8">

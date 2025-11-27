@@ -10,6 +10,7 @@ import Header from "@/components/Header";
 import MobileNav from "@/components/MobileNav";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
 import Appointments from "./pages/Appointments";
 import Counseling from "./pages/Counseling";
 import Medicines from "./pages/Medicines";
@@ -22,6 +23,9 @@ import AdminCounseling from "./pages/AdminCounseling";
 import AdminWheelchairs from "./pages/AdminWheelchairs";
 import AdminMedicalAppointment from "./pages/AdminMedicalAppointment";
 import AdminLiveMap from "./pages/AdminLiveMap";
+import AdminMedicines from "./pages/AdminMedicines";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,11 +59,13 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/counseling" element={<AdminCounseling />} />
           <Route path="/admin/wheelchairs" element={<AdminWheelchairs />} />
           <Route path="/admin/appointments" element={<AdminMedicalAppointment />} />
           <Route path="/admin/emergency" element={<AdminLiveMap />} />
+          <Route path="/admin/medicines" element={<AdminMedicines />} />
 
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/counseling" element={<Counseling />} />
@@ -68,6 +74,8 @@ const App = () => (
           <Route path="/wellness" element={<Wellness />} />
           <Route path="/emergency" element={<Navigate to="/sos" replace />} />
           <Route path="/sos" element={<SOSPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

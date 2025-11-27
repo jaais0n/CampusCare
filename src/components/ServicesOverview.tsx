@@ -55,12 +55,12 @@ const ServicesOverview = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate("/auth", { state: { message: `You must be logged in to access ${service.title}.` } });
+        navigate("/auth", { replace: true, state: { message: `You must be logged in to access ${service.title}.` } });
         return;
       }
-      navigate(service.href);
+      navigate(service.href, { replace: true });
     } catch (_e) {
-      navigate(service.href);
+      navigate(service.href, { replace: true });
     }
   };
   const services = [

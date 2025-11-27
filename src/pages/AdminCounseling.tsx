@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { BackBar } from "@/components/BackBar";
 import { Calendar, RefreshCw } from "lucide-react";
+import { useNotificationSound } from "@/hooks/use-notification-sound";
 
 const AdminCounseling = () => {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -15,6 +16,8 @@ const AdminCounseling = () => {
   const [editing, setEditing] = useState<any | null>(null);
   const [editTime, setEditTime] = useState("");
   const { toast } = useToast();
+  const { playNotification } = useNotificationSound();
+  const initialLoadRef = useRef(true);
 
   // Status chip classes
   const statusClass = (s: string) => {
@@ -90,12 +93,49 @@ const AdminCounseling = () => {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    load();
+    
+    // Realtime subscription for new/updated counseling bookings
+    const subscription = supabase
+      .channel('admin_counseling_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'counseling_bookings' },
+        (payload) => {
+          // Skip notification on initial load
+          if (initialLoadRef.current) return;
+          
+          if (payload.eventType === 'INSERT') {
+            playNotification();
+            toast({
+              title: "New Counseling Request!",
+              description: "A new counseling session has been booked",
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            playNotification();
+            toast({
+              title: "Booking Updated",
+              description: "A counseling booking has been modified",
+            });
+          }
+          load(); // Refresh the list
+        }
+      )
+      .subscribe();
+
+    // Mark initial load complete after first load
+    setTimeout(() => { initialLoadRef.current = false; }, 2000);
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        <BackBar label="Back to Admin" to="/admin" />
+        <BackBar label="Back to Admin" to="/admin" desktopOnly />
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Counseling Bookings</h1>
