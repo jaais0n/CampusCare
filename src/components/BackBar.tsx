@@ -12,7 +12,6 @@ export const BackBar: React.FC<BackBarProps> = ({ label = "Back", to = "/", desk
   const navigate = useNavigate();
 
   const goBack = () => {
-    // Always navigate to the explicit path to avoid going to wrong pages
     navigate(to, { replace: true });
   };
 

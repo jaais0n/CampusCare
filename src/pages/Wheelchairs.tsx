@@ -30,7 +30,7 @@ const Wheelchairs = () => {
   const [loading, setLoading] = useState(false);
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
-  const [availableCount, setAvailableCount] = useState(20); // Counter-based availability
+  const [availableCount, setAvailableCount] = useState(20);
   const [editingBooking, setEditingBooking] = useState<WheelchairBooking | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   
@@ -84,7 +84,6 @@ const Wheelchairs = () => {
 
   const calculateAvailability = async () => {
     try {
-      // Count active bookings (pending, confirmed, in-use)
       const { data, error } = await supabase
         .from('wheelchair_bookings')
         .select('id')
@@ -92,15 +91,15 @@ const Wheelchairs = () => {
 
       if (error) {
         console.error('Error calculating availability:', error);
-        setAvailableCount(20); // Default to 20 if error
+        setAvailableCount(20);
       } else {
         const activeBookings = data?.length || 0;
-        const available = Math.max(0, 20 - activeBookings); // Never go below 0
+        const available = Math.max(0, 20 - activeBookings);
         setAvailableCount(available);
       }
     } catch (err) {
       console.error('Unexpected error calculating availability:', err);
-      setAvailableCount(20); // Default to 20 if error
+      setAvailableCount(20);
     }
   };
 
@@ -163,14 +162,11 @@ const Wheelchairs = () => {
     setLoading(true);
 
     try {
-      // Create booking without wheelchair_id (counter-based system)
-      // Handle single time slots (e.g., "10:00") by creating 1-hour duration
       const startTime = formData.selectedTime;
       const [hours, minutes] = startTime.split(':');
       const endHour = (parseInt(hours) + 1).toString().padStart(2, '0');
       const endTime = `${endHour}:${minutes}`;
       
-      // Get student name and email from user session
       const studentName = user.user_metadata?.full_name || 
                           user.user_metadata?.name ||
                           user.email?.split('@')[0] || 
@@ -183,7 +179,7 @@ const Wheelchairs = () => {
         .from('wheelchair_bookings')
         .insert({
           user_id: user.id,
-          wheelchair_id: null, // Optional for counter-based system
+          wheelchair_id: null,
           booking_date: formData.bookingDate,
           start_time: startTime,
           end_time: endTime,
@@ -214,7 +210,7 @@ const Wheelchairs = () => {
           specialRequirements: "",
         });
         fetchBookings();
-        calculateAvailability(); // Refresh availability count
+        calculateAvailability();
       }
     } catch (err) {
       console.error('Unexpected error during booking:', err);
@@ -277,7 +273,6 @@ const Wheelchairs = () => {
 
   const deleteBooking = async (bookingId: string) => {
     try {
-      // Delete the booking
       const { error: deleteError } = await supabase
         .from('wheelchair_bookings')
         .delete()
@@ -299,7 +294,7 @@ const Wheelchairs = () => {
       });
       
       fetchBookings();
-      calculateAvailability(); // Refresh availability count
+      calculateAvailability();
     } catch (err) {
       console.error('Unexpected error deleting booking:', err);
       toast({ 
@@ -360,7 +355,6 @@ const Wheelchairs = () => {
           </Button>
         </div>
 
-        {/* Booking Dialog */}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="max-w-md">
               <DialogHeader>
@@ -430,7 +424,6 @@ const Wheelchairs = () => {
             </DialogContent>
           </Dialog>
 
-        {/* Edit Booking Dialog */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
@@ -505,7 +498,6 @@ const Wheelchairs = () => {
 
 
 
-        {/* My Bookings */}
         <div className="mt-8">
           <h2 className="text-xl font-semibold text-foreground mb-4">My Bookings</h2>
           {isLoadingBookings ? (

@@ -7,9 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-// Cache for profile data to avoid refetching
 const profileCache = new Map<string, { fullName: string; rollNumber: string; avatarUrl: string; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 5 * 60 * 1000;
 
 const Header = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -21,7 +20,6 @@ const Header = () => {
   const location = useLocation();
   const fetchingRef = useRef<string | null>(null);
 
-  // Extract user data from metadata immediately (no DB call)
   const setFromMetadata = useCallback((authUser: AuthUser) => {
     const meta = authUser.user_metadata || {};
     const metaName = meta.full_name?.trim() || authUser.email?.split("@")[0] || "";
@@ -35,9 +33,7 @@ const Header = () => {
     return { metaName, metaAvatar, metaRoll };
   }, []);
 
-  // Load profile from DB (runs in background)
   const fetchProfileFromDB = useCallback(async (userId: string) => {
-    // Check cache first
     const cached = profileCache.get(userId);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       setFullName(cached.fullName);
@@ -46,7 +42,6 @@ const Header = () => {
       return;
     }
 
-    // Prevent duplicate fetches
     if (fetchingRef.current === userId) return;
     fetchingRef.current = userId;
 
@@ -62,12 +57,10 @@ const Header = () => {
         const dbRoll = data.roll_number || "";
         const dbAvatar = data.avatar_url || "";
 
-        // Only update if we got better data from DB
         if (dbName) setFullName(dbName);
         if (dbRoll) setRollNumber(dbRoll);
         if (dbAvatar) setAvatarUrl(dbAvatar);
 
-        // Cache the result
         profileCache.set(userId, {
           fullName: dbName || fullName,
           rollNumber: dbRoll || rollNumber,
@@ -76,27 +69,22 @@ const Header = () => {
         });
       }
     } catch {
-      // Silently fail - metadata is already shown
     } finally {
       fetchingRef.current = null;
     }
   }, [fullName, rollNumber, avatarUrl]);
 
   useEffect(() => {
-    // Get session immediately on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        // Immediately set from metadata (instant)
         setFromMetadata(session.user);
-        // Then fetch from DB in background
         if (location.pathname !== "/auth") {
           fetchProfileFromDB(session.user.id);
         }
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       const authUser = session?.user ?? null;
       setUser(authUser);
@@ -112,7 +100,6 @@ const Header = () => {
         setAvatarUrl("");
       }
 
-      // Clear cache on sign out
       if (event === 'SIGNED_OUT') {
         profileCache.clear();
       }
@@ -168,7 +155,6 @@ const Header = () => {
                   </AvatarFallback>
                 </Avatar>
               </button>
-              {/* SOS quick button removed from header as requested */}
               {user?.user_metadata?.role === 'admin' && (
                 <Button variant="ghost" onClick={() => navigate("/admin", { replace: true })}>Admin</Button>
               )}

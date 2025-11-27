@@ -28,7 +28,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Helper function to check if a table exists
 export async function tableExists(tableName: string): Promise<boolean> {
   try {
     const { data, error } = await supabase.from(tableName).select('id').limit(1);
@@ -44,11 +43,10 @@ export async function tableExists(tableName: string): Promise<boolean> {
   }
 }
 
-// Optimized query helper with caching
 export const cachedQuery = async <T>(
   key: string,
   queryFn: () => Promise<{ data: T | null; error: any }>,
-  cacheDuration = 60000 // 1 minute default
+  cacheDuration = 60000
 ): Promise<{ data: T | null; error: any }> => {
   const cacheKey = `supabase_cache_${key}`;
   const cached = sessionStorage.getItem(cacheKey);

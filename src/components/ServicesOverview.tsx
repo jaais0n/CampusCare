@@ -14,7 +14,6 @@ import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
-// Reusable fade-in on scroll wrapper (no external deps)
 const FadeInOnScroll: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -64,7 +63,6 @@ const ServicesOverview = () => {
     }
   };
   const services = [
-    // First row: Appointments, Counseling, Wheelchairs
     {
       icon: Calendar,
       title: "Medical Appointment",
@@ -95,7 +93,6 @@ const ServicesOverview = () => {
       href: "/wheelchairs",
       available: true
     },
-    // Second row: Medicines and Wellness (Coming Soon)
     {
       icon: Pill,
       title: "Medicines",
@@ -118,7 +115,6 @@ const ServicesOverview = () => {
     }
   ];
 
-  // Split into active and coming soon groups for custom layout
   const primaryServices = services.filter((s) => s.available);
   const firstRowServices = primaryServices.slice(0, 3);
   const secondRowServices = primaryServices.slice(3);
@@ -138,9 +134,7 @@ const ServicesOverview = () => {
           </p>
         </div>
 
-        {/* Services grid */}
 
-        {/* First row: active services in a 3-column grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {firstRowServices.map((service, index) => (
             <FadeInOnScroll key={service.title} delay={index * 100}>
@@ -149,7 +143,6 @@ const ServicesOverview = () => {
                   service.available ? "hover:border-primary/30 hover:shadow-glow hover:translate-y-[-4px]" : "opacity-60 cursor-not-allowed"
                 } flex flex-col`}
               >
-              {/* Background gradient effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 
                               group-hover:opacity-100 transition-opacity duration-300" />
                             <div className="relative z-10 flex flex-col h-full">
@@ -198,7 +191,6 @@ const ServicesOverview = () => {
           ))}
         </div>
 
-        {/* Second row: remaining active services centered */}
         {secondRowServices.length > 0 && (
           <div className="mt-6 sm:mt-8 flex justify-center gap-4 sm:gap-6 lg:gap-8 flex-wrap">
             {secondRowServices.map((service, idx) => (
@@ -208,7 +200,6 @@ const ServicesOverview = () => {
                     service.available ? "hover:border-primary/30 hover:shadow-glow hover:translate-y-[-4px]" : "opacity-60 cursor-not-allowed"
                   }`}
                 >
-                  {/* Background gradient effect */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 
                                   group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative z-10 flex flex-col h-full">
@@ -258,7 +249,6 @@ const ServicesOverview = () => {
           </div>
         )}
 
-        {/* Second row: coming soon services centered */}
         {comingSoonServices.length > 0 && (
           <div className="mt-6 sm:mt-8 flex justify-center gap-4 sm:gap-6 lg:gap-8 flex-wrap">
             {comingSoonServices.map((service, idx) => (

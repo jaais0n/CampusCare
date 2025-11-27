@@ -23,7 +23,6 @@ const Auth = () => {
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  // Role is fixed to 'student' for account creation
   const role: "student" = "student";
   const [rollNumber, setRollNumber] = useState("");
   const [course, setCourse] = useState("");
@@ -42,7 +41,6 @@ const Auth = () => {
         description: location.state.message,
         variant: "destructive",
       });
-      // Clear the state to prevent the toast from re-appearing on refresh
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate, toast]);
@@ -64,7 +62,6 @@ const Auth = () => {
     });
   }, [navigate]);
 
-  // Render-time guard: if already signed in, redirect deterministically
   const metaRole = (session?.user?.user_metadata as any)?.role as string | undefined;
   const isAdminNow = (metaRole || "").toLowerCase() === "admin" || (session?.user?.email?.toLowerCase() === "admin@university.edu");
   if (session?.user) {
@@ -92,7 +89,6 @@ const Auth = () => {
         console.log('Signed In User:', session.user);
         const metadata = session.user.user_metadata as any;
         
-        // Always sync profile with user_metadata on sign-in
         const { error: upsertError } = await supabase.from('profiles').upsert({
           id: session.user.id,
           user_id: session.user.id,
@@ -133,8 +129,6 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Enforce university email for non-admin users
-    // Enforce university email domain for student signups
     {
       const universityPattern = /^[A-Za-z0-9]+@university\.edu$/;
       if (!universityPattern.test(email.trim())) {
@@ -152,7 +146,6 @@ const Auth = () => {
       email,
       password,
       options: {
-        // No email authentication/confirmation required
         data: {
           full_name: fullName,
           phone,
@@ -173,7 +166,6 @@ const Auth = () => {
         variant: "destructive",
       });
     } else {
-      // If a session exists, proceed; otherwise auto sign-in (no email auth)
       let userId = data.session?.user?.id;
       if (!userId) {
         const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
@@ -185,7 +177,6 @@ const Auth = () => {
         userId = signInData.session?.user?.id;
       }
       if (userId) {
-        // Best-effort create/update profile row (RLS allows self-upsert)
         const { error: upsertErr } = await supabase.from('profiles').upsert({
           id: userId,
           user_id: userId,
@@ -200,12 +191,10 @@ const Auth = () => {
           designation,
         } as any, { onConflict: 'id' });
         if (upsertErr) {
-          // Non-blocking warning
           console.error('Profile upsert error:', upsertErr);
           toast({ title: "Signed up (profile pending)", description: upsertErr.message });
         }
 
-        // Route to student home after signup
         navigate('/');
       }
     }
@@ -372,10 +361,8 @@ const Auth = () => {
                       >
                         {showSignupPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
-                    </div>
                   </div>
-
-                  {/* Role selection removed: only Student accounts can be created here */}
+                </div>
 
                   {role === "student" && (
                     <div className="grid grid-cols-2 gap-4">
@@ -409,8 +396,6 @@ const Auth = () => {
                     </div>
                   )}
 
-                  {/* Faculty option removed from sign up */}
-
                   <div className="space-y-2">
                     <Label htmlFor="department" className="text-foreground">Department</Label>
                     <Input
@@ -435,7 +420,6 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        {/* removed vendor-specific attribution */}
       </div>
 
       {/* Forgot Password Dialog */}

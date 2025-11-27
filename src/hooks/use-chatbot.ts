@@ -5,7 +5,6 @@ interface ChatMessage {
   message: string;
 }
 
-// Gemini API key - In production, use environment variable
 const GEMINI_API_KEY = 'AIzaSyB1Xc6RKHwKs9HJXW5Ek8wKqB6v9s3cBnY';
 
 const SYSTEM_PROMPT = `You are CampusCare AI Assistant, a helpful, friendly, and highly knowledgeable assistant for CampusCare+, a campus wellness platform.

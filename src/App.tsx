@@ -30,15 +30,14 @@ import TermsOfService from "./pages/TermsOfService";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 10,
       refetchOnWindowFocus: false,
       retry: 1,
     },
   },
 });
 
-// Scroll to top on route change
 const ScrollToTop = () => {
   const location = useLocation();
   useEffect(() => {
@@ -76,7 +75,6 @@ const App = () => (
           <Route path="/sos" element={<SOSPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
         <MobileNav />

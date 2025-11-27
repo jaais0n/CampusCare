@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Input } from "./ui/input";
 
-// Add custom animation for pulsing effect
 const style = document.createElement('style');
 style.textContent = `
   @keyframes ping-slow {
@@ -37,7 +36,6 @@ const MobileNav = () => {
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   
-  // Draggable SOS button state
   const [sosPosition, setSosPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
@@ -45,15 +43,12 @@ const MobileNav = () => {
   const sosRef = useRef<HTMLDivElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize SOS button position
   useEffect(() => {
     if (!isInitialized && typeof window !== 'undefined') {
-      // Load saved position from localStorage or use default
       const savedPosition = localStorage.getItem('sosButtonPosition');
       if (savedPosition) {
         setSosPosition(JSON.parse(savedPosition));
       } else {
-        // Default position: bottom-right
         setSosPosition({
           x: window.innerWidth - 80,
           y: window.innerHeight - 180
@@ -63,7 +58,6 @@ const MobileNav = () => {
     }
   }, [isInitialized]);
 
-  // Handle mouse/touch drag
   const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -81,11 +75,9 @@ const MobileNav = () => {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
-    // Calculate new position with bounds
     const newX = Math.max(20, Math.min(window.innerWidth - 80, clientX - dragStart.x));
     const newY = Math.max(20, Math.min(window.innerHeight - 100, clientY - dragStart.y));
     
-    // Check if actually moved (more than 5px)
     if (Math.abs(newX - sosPosition.x) > 5 || Math.abs(newY - sosPosition.y) > 5) {
       setHasDragged(true);
     }
@@ -96,21 +88,17 @@ const MobileNav = () => {
   const handleDragEnd = useCallback(() => {
     if (isDragging) {
       setIsDragging(false);
-      // Save position to localStorage
       localStorage.setItem('sosButtonPosition', JSON.stringify(sosPosition));
     }
   }, [isDragging, sosPosition]);
 
-  // Handle SOS button click - only navigate if not dragged
   const handleSOSClick = useCallback(() => {
     if (!hasDragged) {
       navigate("/sos", { replace: true });
     }
-    // Reset hasDragged after a short delay
     setTimeout(() => setHasDragged(false), 100);
   }, [hasDragged, navigate]);
 
-  // Add global event listeners for dragging
   useEffect(() => {
     if (isDragging) {
       window.addEventListener('mousemove', handleDrag);
@@ -126,12 +114,10 @@ const MobileNav = () => {
     };
   }, [isDragging, handleDrag, handleDragEnd]);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory]);
 
-  // System prompt for the AI
   const systemPrompt = `You are CampusCare AI Assistant, a helpful, friendly, and highly knowledgeable AI assistant for CampusCare+, a campus wellness platform.
 
 YOUR CAPABILITIES - You can help with ANYTHING:
@@ -157,12 +143,10 @@ GUIDELINES:
 
 You're a powerful AI - help with ANYTHING the user asks!`;
 
-  // Call Gemini API for AI responses
   const getAIResponse = async (userMessage: string): Promise<string> => {
     const API_KEY = 'AIzaSyCZn9Xcxtma_gfEm0iQjmAsQdbHFNK3Hd8';
     
     try {
-      // Using Gemini API v1 with gemini-2.0-flash model
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
         {
@@ -206,12 +190,10 @@ You're a powerful AI - help with ANYTHING the user asks!`;
       throw new Error('Invalid response format');
     } catch (error) {
       console.error('AI Response Error:', error);
-      // Fallback to local responses if API fails
       return getFallbackResponse(userMessage);
     }
   };
 
-  // Fallback responses when API is unavailable
   const getFallbackResponse = (userMessage: string): string => {
     const msg = userMessage.toLowerCase();
     
@@ -243,10 +225,8 @@ You're a powerful AI - help with ANYTHING the user asks!`;
     const userMsg = chatMessage;
     setChatMessage("");
     
-    // Add user message
     setChatHistory(prev => [...prev, { role: 'user', message: userMsg }]);
     
-    // Show typing indicator
     setIsTyping(true);
     
     try {
@@ -292,11 +272,9 @@ You're a powerful AI - help with ANYTHING the user asks!`;
 
   return (
     <>
-      {/* Chat Bot Window - Bigger on desktop */}
       {isChatOpen && (
         <div className="fixed bottom-36 right-4 z-50 w-80 sm:w-96 md:w-[450px] lg:w-[500px] animate-in slide-in-from-bottom-5 duration-300">
           <div className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
-            {/* Chat Header */}
             <div className="bg-gradient-to-r from-primary to-teal-500 p-4 md:p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 md:h-12 md:w-12 border-2 border-white/30">
@@ -330,7 +308,6 @@ You're a powerful AI - help with ANYTHING the user asks!`;
               </div>
             </div>
             
-            {/* Chat Messages - Taller on desktop */}
             <div className="h-72 md:h-96 lg:h-[450px] overflow-y-auto p-4 md:p-5 space-y-4 bg-background/50">
               {chatHistory.map((chat, index) => (
                 <div 
@@ -360,7 +337,6 @@ You're a powerful AI - help with ANYTHING the user asks!`;
                 </div>
               ))}
               
-              {/* Typing indicator */}
               {isTyping && (
                 <div className="flex gap-2 md:gap-3 justify-start">
                   <Avatar className="h-8 w-8 md:h-10 md:w-10 shrink-0">
@@ -380,7 +356,6 @@ You're a powerful AI - help with ANYTHING the user asks!`;
               <div ref={chatEndRef} />
             </div>
             
-            {/* Chat Input */}
             <div className="p-3 md:p-4 border-t border-border bg-card">
               <div className="flex gap-2 md:gap-3">
                 <Input
@@ -404,7 +379,6 @@ You're a powerful AI - help with ANYTHING the user asks!`;
         </div>
       )}
 
-      {/* Draggable SOS Button */}
       {location.pathname !== "/sos" && !location.pathname.startsWith("/admin") && isInitialized && (
         <div 
           ref={sosRef}
@@ -421,14 +395,11 @@ You're a powerful AI - help with ANYTHING the user asks!`;
           onTouchStart={handleDragStart}
           onClick={handleSOSClick}
         >
-          {/* SOS Button */}
           <div className="block">
             <div className="relative">
-              {/* Pulsing ring effect */}
               <div className="absolute -inset-1 bg-red-500/30 rounded-full animate-ping-slow" />
               <div className="absolute -inset-2 bg-red-500/20 rounded-full animate-ping-slow animation-delay-1000" />
               
-              {/* Main SOS button */}
               <Button 
                 variant="destructive" 
                 size="lg" 
@@ -444,7 +415,6 @@ You're a powerful AI - help with ANYTHING the user asks!`;
         </div>
       )}
 
-      {/* Fixed Chatbot Button */}
       {location.pathname !== "/sos" && !location.pathname.startsWith("/admin") && (
         <div className="fixed bottom-20 right-4 z-50">
           <button 
@@ -463,7 +433,6 @@ You're a powerful AI - help with ANYTHING the user asks!`;
                 <MessageCircle className="h-5 w-5 text-white" />
               )}
             </div>
-            {/* Notification dot */}
             {!isChatOpen && (
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background animate-pulse"></span>
             )}
@@ -471,7 +440,6 @@ You're a powerful AI - help with ANYTHING the user asks!`;
         </div>
       )}
 
-      {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 sm:hidden">
         <div className="flex justify-around items-center h-16">
           {navItems.map((item) => (

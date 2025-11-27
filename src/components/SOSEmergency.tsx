@@ -18,7 +18,7 @@ const SOSEmergency = () => {
   const [emergencyAlerts, setEmergencyAlerts] = useState<EmergencyAlert[]>([
     {
       id: '1',
-      timestamp: new Date(Date.now() - 300000), // 5 minutes ago
+      timestamp: new Date(Date.now() - 300000),
       location: 'Library Building - Floor 2',
       status: 'active',
       userType: 'student',
@@ -33,9 +33,9 @@ const SOSEmergency = () => {
     const newAlert: EmergencyAlert = {
       id: Date.now().toString(),
       timestamp: new Date(),
-      location: 'Current Location', // In real app, would use geolocation
+      location: 'Current Location',
       status: 'active',
-      userType: 'student', // Would come from auth context
+      userType: 'student',
       userName: 'Current User'
     };
     
@@ -47,7 +47,6 @@ const SOSEmergency = () => {
       variant: "destructive"
     });
 
-    // Auto-deactivate after 3 seconds
     setTimeout(() => setIsSOSActive(false), 3000);
   };
 

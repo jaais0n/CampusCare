@@ -26,7 +26,6 @@ export const NetworkStatus = () => {
     };
   }, []);
 
-  // Auto-hide the "back online" message after 3 seconds
   useEffect(() => {
     if (isOnline && !showOffline) {
       const timer = setTimeout(() => {

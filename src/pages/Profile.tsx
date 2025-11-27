@@ -54,7 +54,6 @@ const Profile = () => {
   const [uploading, setUploading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   
-  // Image adjustment states
   const [showCropDialog, setShowCropDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<HTMLImageElement | null>(null);
@@ -103,7 +102,6 @@ const Profile = () => {
   const fetchProfile = async (authUser: AuthUser) => {
     setLoading(true);
     try {
-      // Try to fetch from profiles table
       const { data, error } = await (supabase
         .from("profiles") as any)
         .select("*")
@@ -143,7 +141,6 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
         title: "Invalid file",
@@ -153,7 +150,6 @@ const Profile = () => {
       return;
     }
 
-    // Validate file size (max 5MB for original, will be compressed)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -163,7 +159,6 @@ const Profile = () => {
       return;
     }
 
-    // Load image for preview
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
@@ -178,11 +173,9 @@ const Profile = () => {
     };
     reader.readAsDataURL(file);
     
-    // Reset file input so same file can be selected again
     e.target.value = '';
   };
 
-  // Draw preview with current zoom and position
   const drawPreview = useCallback(() => {
     if (!previewImage || !previewCanvasRef.current) return;
     
@@ -190,44 +183,36 @@ const Profile = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const size = 250; // Preview size
+    const size = 250;
     canvas.width = size;
     canvas.height = size;
 
-    // Clear canvas
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, size, size);
 
-    // Calculate scaled dimensions
     const imgAspect = previewImage.width / previewImage.height;
     let drawWidth, drawHeight;
     
     if (imgAspect > 1) {
-      // Landscape
       drawHeight = size * zoom;
       drawWidth = drawHeight * imgAspect;
     } else {
-      // Portrait or square
       drawWidth = size * zoom;
       drawHeight = drawWidth / imgAspect;
     }
 
-    // Center with offset
     const x = (size - drawWidth) / 2 + position.x;
     const y = (size - drawHeight) / 2 + position.y;
 
     ctx.drawImage(previewImage, x, y, drawWidth, drawHeight);
 
-    // Draw circular crop guide
     ctx.globalCompositeOperation = 'destination-in';
     ctx.beginPath();
     ctx.arc(size / 2, size / 2, size / 2 - 10, 0, Math.PI * 2);
     ctx.fill();
 
-    // Reset composite operation
     ctx.globalCompositeOperation = 'source-over';
     
-    // Draw circle border
     ctx.strokeStyle = '#14b8a6';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -235,14 +220,12 @@ const Profile = () => {
     ctx.stroke();
   }, [previewImage, zoom, position]);
 
-  // Update preview when settings change
   useEffect(() => {
     if (showCropDialog) {
       drawPreview();
     }
   }, [showCropDialog, drawPreview]);
 
-  // Handle drag to pan
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
@@ -252,7 +235,6 @@ const Profile = () => {
     if (!isDragging) return;
     const newX = e.clientX - dragStart.x;
     const newY = e.clientY - dragStart.y;
-    // Limit panning
     const maxPan = 100 * zoom;
     setPosition({
       x: Math.max(-maxPan, Math.min(maxPan, newX)),
@@ -264,7 +246,6 @@ const Profile = () => {
     setIsDragging(false);
   };
 
-  // Touch handlers for mobile
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     const touch = e.touches[0];
     setIsDragging(true);
@@ -287,13 +268,11 @@ const Profile = () => {
     setIsDragging(false);
   };
 
-  // Reset crop settings
   const resetCrop = () => {
     setZoom(1);
     setPosition({ x: 0, y: 0 });
   };
 
-  // Apply crop and upload
   const applyCropAndUpload = async () => {
     if (!previewImage || !user) return;
 
@@ -301,7 +280,6 @@ const Profile = () => {
     setShowCropDialog(false);
 
     try {
-      // Delete old avatar from storage if it exists
       const oldAvatarUrl = profile.avatar_url;
       if (oldAvatarUrl && oldAvatarUrl.includes('supabase') && oldAvatarUrl.includes('/avatars/')) {
         try {
@@ -320,7 +298,6 @@ const Profile = () => {
         description: "Please wait",
       });
 
-      // Create final cropped image
       const outputSize = 300;
       const canvas = document.createElement('canvas');
       canvas.width = outputSize;
@@ -328,7 +305,6 @@ const Profile = () => {
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Failed to get canvas context');
 
-      // Calculate source dimensions
       const imgAspect = previewImage.width / previewImage.height;
       let drawWidth, drawHeight;
       
@@ -340,18 +316,15 @@ const Profile = () => {
         drawHeight = drawWidth / imgAspect;
       }
 
-      // Scale position proportionally
       const scale = outputSize / 250;
       const x = (outputSize - drawWidth) / 2 + (position.x * scale);
       const y = (outputSize - drawHeight) / 2 + (position.y * scale);
 
-      // Draw with circular clip
       ctx.beginPath();
       ctx.arc(outputSize / 2, outputSize / 2, outputSize / 2, 0, Math.PI * 2);
       ctx.clip();
       ctx.drawImage(previewImage, x, y, drawWidth, drawHeight);
 
-      // Convert to blob with compression
       const blob = await new Promise<Blob>((resolve, reject) => {
         let quality = 0.8;
         const tryCompress = () => {
@@ -377,7 +350,6 @@ const Profile = () => {
         tryCompress();
       });
 
-      // Convert to base64
       const base64Promise = new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
@@ -387,7 +359,6 @@ const Profile = () => {
 
       const newAvatarUrl = await base64Promise;
 
-      // Update profile
       const { data: updateData } = await (supabase
         .from("profiles") as any)
         .update({
@@ -408,7 +379,6 @@ const Profile = () => {
           .select();
       }
 
-      // Save to user metadata
       await supabase.auth.updateUser({
         data: { avatar_url: newAvatarUrl }
       });
@@ -446,7 +416,6 @@ const Profile = () => {
     
     setSaving(true);
     try {
-      // Try update first
       const { error: updateError } = await (supabase
         .from("profiles") as any)
         .update({
@@ -461,7 +430,6 @@ const Profile = () => {
         })
         .eq('user_id', user.id);
 
-      // If update failed (no row exists), try insert
       if (updateError) {
         const { error: insertError } = await (supabase
           .from("profiles") as any)
@@ -480,7 +448,6 @@ const Profile = () => {
         if (insertError) throw insertError;
       }
 
-      // Also update user metadata
       await supabase.auth.updateUser({
         data: {
           full_name: profile.full_name,

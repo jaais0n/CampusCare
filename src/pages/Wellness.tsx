@@ -81,12 +81,10 @@ const Wellness = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Realtime updates so user view reflects admin edits immediately
   useEffect(() => {
     const channel = supabase
       .channel('wellness_programs_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'wellness_programs' }, () => {
-        // Refetch programs whenever a program is inserted/updated/deleted
         fetchPrograms();
       })
       .subscribe();
@@ -97,7 +95,6 @@ const Wellness = () => {
   }, []);
 
   const fetchPrograms = async () => {
-    // Try to load from Supabase first; if table not ready, fall back to static
     try {
       const { data, error } = await supabase
         .from('wellness_programs')
@@ -108,7 +105,6 @@ const Wellness = () => {
 
       if (data && data.length > 0) {
         const mapped: WellnessProgram[] = data.map((row: any) => ({
-          // Prefer external_id (string like 'yoga-1'). Fallback to uuid id as string.
           id: row.external_id || row.id?.toString?.() || row.id,
           name: row.name || '',
           type: row.type || 'Fitness',
@@ -137,7 +133,6 @@ const Wellness = () => {
       console.warn('Falling back to static wellness programs. Reason:', e);
     }
 
-    // Fallback static programs
     const staticPrograms: WellnessProgram[] = [
       {
         id: 'yoga-1',
@@ -226,11 +221,10 @@ const Wellness = () => {
     setEditProgram(prev => prev ? { ...prev, [field]: value } as WellnessProgram : prev);
   };
 
-  // Create a brand-new program (admin). Uses a string external_id for human-readability.
   const createNewProgram = () => {
     const now = Date.now();
     const defaultType = 'Yoga';
-    const newId = `${defaultType.toLowerCase()}-${now}`; // becomes external_id in backend
+    const newId = `${defaultType.toLowerCase()}-${now}`;
     const blank: WellnessProgram = {
       id: newId,
       name: '',
@@ -258,9 +252,7 @@ const Wellness = () => {
   const saveProgram = async () => {
     if (!editProgram) return;
     try {
-      // Normalize payload for backend (schedule_days must be an array)
       const payload: any = {
-        // Use external_id to carry human-readable id from frontend ('yoga-1')
         external_id: editProgram.id,
         name: editProgram.name,
         type: editProgram.type,
@@ -288,10 +280,8 @@ const Wellness = () => {
 
       const { error } = await supabase
         .from('wellness_programs')
-        // Upsert on external_id to avoid UUID constraint; assumes a unique index on external_id
         .upsert(payload, { onConflict: 'external_id' });
       if (error) throw error;
-      // Refetch from backend so all clients (and this one) see the canonical data
       await fetchPrograms();
       toast({ title: 'Program updated', description: `${editProgram.name} has been saved.` });
     } catch (e) {
@@ -299,7 +289,6 @@ const Wellness = () => {
       const message = (e as any)?.message || 'Backend not ready, updated locally only.';
       toast({ title: 'Saved locally', description: message });
     }
-    // Optimistic local update as a fallback
     setPrograms(prev => prev.map(p => p.id === editProgram.id ? editProgram : p));
     setIsEditOpen(false);
   };
@@ -338,9 +327,6 @@ const Wellness = () => {
           )}
         </div>
 
-        {/* Program Categories removed as requested */}
-
-        {/* Available Programs */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-foreground mb-4">Available Programs</h2>
           <div className="grid gap-6">
@@ -463,7 +449,6 @@ const Wellness = () => {
           </Card>
         )}
 
-        {/* Admin Edit Dialog */}
         {isAdmin && editProgram && (
           <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
             <DialogContent className="max-w-xl">

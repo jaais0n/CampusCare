@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 
-// Simple reusable fade-in-on-scroll wrapper
 const FadeInOnScroll: React.FC<{ children: React.ReactNode; delay?: number; className?: string }> = ({ children, delay = 0, className = "" }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -40,7 +39,6 @@ const FadeInOnScroll: React.FC<{ children: React.ReactNode; delay?: number; clas
   );
 };
 
-// Floating animated element
 const FloatingElement: React.FC<{ children: React.ReactNode; delay?: number; className?: string }> = ({ children, delay = 0, className = "" }) => {
   return (
     <div 
@@ -52,19 +50,15 @@ const FloatingElement: React.FC<{ children: React.ReactNode; delay?: number; cla
   );
 };
 
-// SVG Illustrations
 const HealthIllustration = () => (
   <svg viewBox="0 0 400 400" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Background circles */}
     <circle cx="200" cy="200" r="180" fill="url(#gradient1)" opacity="0.1" />
     <circle cx="200" cy="200" r="140" fill="url(#gradient1)" opacity="0.15" />
     <circle cx="200" cy="200" r="100" fill="url(#gradient1)" opacity="0.2" />
     
-    {/* Central medical cross */}
     <rect x="175" y="120" width="50" height="160" rx="10" fill="url(#gradient2)" />
     <rect x="120" y="175" width="160" height="50" rx="10" fill="url(#gradient2)" />
     
-    {/* Heart pulse line */}
     <path 
       d="M60 200 L100 200 L120 160 L140 240 L160 180 L180 220 L200 200 L340 200" 
       stroke="#14b8a6" 
@@ -74,13 +68,11 @@ const HealthIllustration = () => (
       className="animate-pulse"
     />
     
-    {/* Decorative dots */}
     <circle cx="80" cy="120" r="8" fill="#14b8a6" opacity="0.6" />
     <circle cx="320" cy="280" r="12" fill="#f97316" opacity="0.6" />
     <circle cx="300" cy="100" r="6" fill="#22c55e" opacity="0.6" />
     <circle cx="100" cy="300" r="10" fill="#eab308" opacity="0.6" />
     
-    {/* Stethoscope simplified */}
     <circle cx="280" cy="140" r="25" stroke="#14b8a6" strokeWidth="4" fill="none" />
     <path d="M280 165 Q280 200 240 220" stroke="#14b8a6" strokeWidth="4" fill="none" strokeLinecap="round" />
     <circle cx="240" cy="220" r="8" fill="#14b8a6" />
@@ -100,7 +92,6 @@ const HealthIllustration = () => (
 
 const WellnessIllustration = () => (
   <svg viewBox="0 0 300 300" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Yoga person silhouette */}
     <circle cx="150" cy="60" r="25" fill="#14b8a6" opacity="0.8" />
     <path 
       d="M150 85 L150 160 M150 120 L100 100 M150 120 L200 100 M150 160 L100 220 M150 160 L200 220" 
@@ -109,15 +100,12 @@ const WellnessIllustration = () => (
       strokeLinecap="round"
     />
     
-    {/* Lotus flower base */}
     <ellipse cx="150" cy="250" rx="80" ry="20" fill="#14b8a6" opacity="0.2" />
     
-    {/* Sparkles around */}
     <path d="M60 80 L65 90 L75 85 L65 95 L60 105 L55 95 L45 85 L55 90 Z" fill="#f97316" opacity="0.7" />
     <path d="M240 120 L243 127 L250 125 L243 130 L240 137 L237 130 L230 125 L237 127 Z" fill="#22c55e" opacity="0.7" />
     <path d="M80 200 L82 205 L87 204 L82 207 L80 212 L78 207 L73 204 L78 205 Z" fill="#eab308" opacity="0.7" />
     
-    {/* Circular aura */}
     <circle cx="150" cy="130" r="90" stroke="#14b8a6" strokeWidth="2" strokeDasharray="10 5" opacity="0.3" />
     <circle cx="150" cy="130" r="110" stroke="#14b8a6" strokeWidth="1" strokeDasharray="5 10" opacity="0.2" />
   </svg>
@@ -125,12 +113,10 @@ const WellnessIllustration = () => (
 
 const EmergencyIllustration = () => (
   <svg viewBox="0 0 300 300" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Alert circle */}
     <circle cx="150" cy="150" r="100" fill="#ef4444" opacity="0.1" className="animate-ping" style={{ animationDuration: '2s' }} />
     <circle cx="150" cy="150" r="80" fill="#ef4444" opacity="0.2" />
     <circle cx="150" cy="150" r="60" fill="#ef4444" opacity="0.3" />
     
-    {/* Shield */}
     <path 
       d="M150 70 L200 90 L200 150 Q200 200 150 230 Q100 200 100 150 L100 90 Z" 
       fill="url(#shieldGrad)" 
@@ -138,11 +124,9 @@ const EmergencyIllustration = () => (
       strokeWidth="3"
     />
     
-    {/* Plus sign inside shield */}
     <rect x="140" y="100" width="20" height="80" rx="4" fill="white" />
     <rect x="110" y="130" width="80" height="20" rx="4" fill="white" />
     
-    {/* Signal waves */}
     <path d="M220 100 Q240 120 220 140" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.6" />
     <path d="M235 90 Q265 120 235 150" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.4" />
     
@@ -205,7 +189,6 @@ const HeroSection = () => {
     <>
       {/* Hero Section */}
       <section className="min-h-screen flex items-center justify-center bg-gradient-hero px-4 pt-16 pb-8 overflow-hidden relative">
-        {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
@@ -214,7 +197,6 @@ const HeroSection = () => {
 
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left side - Text content */}
             <div className="text-center lg:text-left">
               <FadeInOnScroll>
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20 mb-6">
@@ -259,7 +241,6 @@ const HeroSection = () => {
                 </div>
               </FadeInOnScroll>
 
-              {/* Trust badges */}
               <FadeInOnScroll delay={400}>
                 <div className="flex flex-wrap gap-6 justify-center lg:justify-start text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
@@ -278,7 +259,6 @@ const HeroSection = () => {
               </FadeInOnScroll>
             </div>
 
-            {/* Right side - Illustration */}
             <FadeInOnScroll delay={200} className="hidden lg:block">
               <div className="relative">
                 <FloatingElement delay={0}>
@@ -287,7 +267,6 @@ const HeroSection = () => {
                   </div>
                 </FloatingElement>
                 
-                {/* Floating cards around illustration */}
                 <FloatingElement delay={500} className="absolute -left-8 top-1/4">
                   <div className="bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl p-3 shadow-lg">
                     <div className="flex items-center gap-2">
@@ -333,7 +312,6 @@ const HeroSection = () => {
             </FadeInOnScroll>
           </div>
 
-          {/* Feature Cards */}
           <div className="mt-16 lg:mt-24">
             <FadeInOnScroll>
               <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-10">
@@ -368,9 +346,7 @@ const HeroSection = () => {
         </div>
       </section>
 
-      {/* Stats Section - Separate for better visual flow */}
       <section className="py-16 md:py-20 bg-gradient-to-b from-background to-card/50 relative overflow-hidden">
-        {/* Decorative elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-primary/20 to-transparent" />
           <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-transparent via-primary/20 to-transparent" />

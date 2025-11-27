@@ -26,7 +26,7 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ location, isActive, s
   useEffect(() => {
     if (!leafletMapRef.current && mapContainerRef.current) {
       leafletMapRef.current = L.map(mapContainerRef.current, {
-        center: [20.5937, 78.9629], // Center of India
+        center: [20.5937, 78.9629],
         zoom: 5,
         zoomControl: false,
         attributionControl: false,
@@ -34,14 +34,12 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ location, isActive, s
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '',
-        className: 'map-tiles' // Add class for dark mode
+        className: 'map-tiles'
       }).addTo(leafletMapRef.current);
 
       markerLayerRef.current = L.layerGroup().addTo(leafletMapRef.current);
-      console.log("LiveLocationMap - Map initialized."); // Debugging line
     }
 
-    // Define custom SOS icon
     const userIcon = L.divIcon({
       className: 'user-location-icon',
       html: `<div class="w-4 h-4 rounded-full ${isActive ? 'bg-red-600 animate-pulse shadow-[0_0_15px_3px_rgba(220,38,38,0.7)]' : 'bg-blue-500 shadow-[0_0_15px_3px_rgba(59,130,246,0.5)]'} border-2 border-white"></div>`,
@@ -90,18 +88,15 @@ const LiveLocationMap: React.FC<LiveLocationMapProps> = ({ location, isActive, s
       leafletMapRef.current.setView([20.5937, 78.9629], 5);
     }
 
-    // Ensure Leaflet recalculates size after React paints
     setTimeout(() => {
       try { leafletMapRef.current?.invalidateSize(); } catch {}
     }, 0);
 
-    // Recalculate on window resize
     const onWindowResize = () => {
       try { leafletMapRef.current?.invalidateSize(); } catch {}
     };
     window.addEventListener('resize', onWindowResize);
 
-    // Recalculate when container size changes (e.g., left column grows)
     let ro: ResizeObserver | null = null;
     const container = mapContainerRef.current;
     if (container && 'ResizeObserver' in window) {

@@ -31,9 +31,6 @@ const Index = () => {
       <main>
         <HeroSection />
         <ServicesOverview />
-        {/* SOS section removed to avoid duplication; use /sos page for SOS interface */}
-
-
         {/* Footer */}
         <footer className="bg-card py-12 px-4 border-t border-border">
           <div className="max-w-7xl mx-auto">

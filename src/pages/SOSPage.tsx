@@ -39,8 +39,8 @@ const SOSPage = () => {
   const [isSendingAlert, setIsSendingAlert] = useState(false);
   const [location, setLocation] = useState<{ latitude: number; longitude: number; address?: string } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [geoPermission, setGeoPermission] = useState<PermissionState | null>(null); // 'granted' | 'denied' | 'prompt'
-  const [emergencyContacts, setEmergencyContacts] = useState<any[]>([]); // Replace 'any' with actual type
+  const [geoPermission, setGeoPermission] = useState<PermissionState | null>(null);
+  const [emergencyContacts, setEmergencyContacts] = useState<any[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
   const alertAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -51,7 +51,7 @@ const SOSPage = () => {
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('Supabase Session:', session); // Add this line
+      console.log('Supabase Session:', session);
       setUser(session?.user || null);
     };
 
@@ -72,7 +72,6 @@ const SOSPage = () => {
         async (position) => {
           const { latitude, longitude } = position.coords;
           
-          // Get address from coordinates using reverse geocoding
           try {
             const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
             const data = await response.json();
@@ -107,11 +106,9 @@ const SOSPage = () => {
     }
   };
 
-  // Check geolocation permission status (when available)
   useEffect(() => {
     const checkPerm = async () => {
       try {
-        // Some browsers do not support Permissions API
         const anyNav: any = navigator as any;
         if (anyNav?.permissions?.query) {
           const status: PermissionStatus = await anyNav.permissions.query({ name: 'geolocation' as PermissionName });
@@ -119,13 +116,11 @@ const SOSPage = () => {
           status.onchange = () => setGeoPermission(status.state);
         }
       } catch {
-        // Ignore – fall back to explicit button action
       }
     };
     checkPerm();
   }, []);
 
-  // If permission is already granted, attempt to fetch automatically
   useEffect(() => {
     if (geoPermission === 'granted' && !location) {
       getCurrentLocation();
@@ -149,7 +144,6 @@ const SOSPage = () => {
           })
           .catch(error => {
             console.error("Error playing audio:", error);
-            // Try playing on user interaction
             toast({
               title: "Sound Alert",
               description: "Tap anywhere to enable emergency sound",
@@ -177,7 +171,6 @@ const SOSPage = () => {
         throw new Error("User not authenticated.");
       }
 
-      // Try to fetch profile for better identity info
       let prof: { full_name?: string | null; roll_number?: string | null } = {};
       try {
         const { data: p } = await (supabase.from as any)('profiles')
@@ -201,12 +194,10 @@ const SOSPage = () => {
           email: user.email,
           full_name: prof.full_name || user.user_metadata.full_name || null,
           roll_number: prof.roll_number || userRoll || null,
-          // Removed profile-specific fields
         },
       };
 
       console.log("Attempting to insert alert data:", alertData);
-      // Cast to any to avoid strict generated types blocking dynamic tables
       const { error } = await (supabase.from as any)('emergency_alerts').insert([alertData]);
       if (error) {
         console.error("Error inserting alert data:", error);
@@ -214,7 +205,6 @@ const SOSPage = () => {
       }
       console.log("Alert data inserted successfully.");
 
-      // Play alert sound immediately after successful alert
       playAlertSound();
 
       toast({ title: "Emergency Alert Sent!", description: "Help is on the way. Stay calm." });
@@ -227,7 +217,7 @@ const SOSPage = () => {
         variant: "destructive",
       });
     } finally {
-      setShowWarningPopup(false); // Close popup after sending alert
+      setShowWarningPopup(false);
     }
   };
 
@@ -235,7 +225,6 @@ const SOSPage = () => {
     setShowWarningPopup(true);
   };
 
-  // Cleanup audio on unmount
   useEffect(() => {
     return () => {
       if (alertAudioRef.current) {
@@ -247,7 +236,6 @@ const SOSPage = () => {
 
   return (
     <div className={`min-h-screen bg-background flex flex-col items-center justify-center p-4 text-foreground ${isSendingAlert ? 'animate-alert-flash' : ''} ${showWarningPopup ? 'filter blur-sm' : ''}`}>
-      {/* Hidden audio element for better browser compatibility */}
       <audio
         ref={alertAudioRef}
         src="/Alertsound.mp3"
@@ -256,7 +244,6 @@ const SOSPage = () => {
         style={{ display: 'none' }}
       />
       
-      {/* Stop Sound Button - shows when sound is playing */}
       {isPlayingSound && (
         <div className="fixed top-4 right-4 z-50">
           <Button
@@ -312,7 +299,6 @@ const SOSPage = () => {
         </div>
       )}
 
-      {/* Loading state */}
       {!location && !locationError && (
         <div className="mt-6 w-full max-w-md">
           <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center">
@@ -324,7 +310,6 @@ const SOSPage = () => {
         </div>
       )}
 
-      {/* Interactive Live Location Map */}
       {location && (
         <div className="mt-6 w-full max-w-md">
           <div className="h-64 w-full">
@@ -336,7 +321,6 @@ const SOSPage = () => {
         </div>
       )}
 
-      {/* Location CTA / Guidance for Mobile */}
       {!location && (
         <div className="mt-6 w-full max-w-md">
           <div className="p-4 rounded-lg border border-border bg-card">
