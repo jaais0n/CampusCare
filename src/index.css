@@ -11,32 +11,32 @@
     /* Dark theme colors */
     --background: 220 13% 9%;
     --foreground: 210 40% 98%;
-    
+
     /* Card and surface colors */
     --card: 224 71% 4%;
     --card-foreground: 210 40% 98%;
-    
+
     /* Popover colors */
     --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
-    
+
     /* Primary teal-green accent */
     --primary: 168 76% 42%;
     --primary-foreground: 220 13% 9%;
     --primary-glow: 168 76% 50%;
-    
+
     /* Secondary accents */
     --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 40% 98%;
-    
+
     /* Muted colors for subtle elements */
     --muted: 215 27.9% 16.9%;
     --muted-foreground: 217.9 10.6% 64.9%;
-    
+
     /* Accent variations */
     --accent: 215 27.9% 16.9%;
     --accent-foreground: 210 40% 98%;
-    
+
     /* Status colors */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -44,29 +44,29 @@
     --success-foreground: 210 40% 98%;
     --warning: 47 96% 53%;
     --warning-foreground: 220 13% 9%;
-    
+
     /* Borders and inputs */
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
     --ring: 168 76% 42%;
-    
+
     /* Component specific */
     --radius: 0.75rem;
-    
+
     /* Custom gradients */
     --gradient-primary: linear-gradient(135deg, hsl(168 76% 42%) 0%, hsl(168 76% 50%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(215 27.9% 16.9%) 0%, hsl(220 13% 9%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(220 13% 9%) 0%, hsl(224 71% 4%) 50%, hsl(168 76% 8%) 100%);
-    
+
     /* Shadows with teal glow */
     --shadow-primary: 0 10px 40px -12px hsl(168 76% 42% / 0.25);
     --shadow-card: 0 4px 12px -2px hsl(220 13% 9% / 0.8);
     --shadow-glow: 0 0 30px hsl(168 76% 42% / 0.3);
-    
+
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    
+
     /* Sidebar colors for dark theme */
     --sidebar-background: 224 71% 4%;
     --sidebar-foreground: 210 40% 98%;
@@ -90,7 +90,7 @@
     margin: 0;
     padding: 0;
   }
-  
+
   html {
     font-family: 'Outfit', sans-serif;
   }
@@ -102,41 +102,45 @@
 }
 
 @layer components {
+
   /* Custom component styles */
   .gradient-primary {
     background: var(--gradient-primary);
   }
-  
+
   .gradient-hero {
     background: var(--gradient-hero);
   }
-  
+
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
-  
+
   .shadow-card {
     box-shadow: var(--shadow-card);
   }
-  
+
   .transition-smooth {
     transition: var(--transition-smooth);
   }
-  
+
   .transition-bounce {
     transition: var(--transition-bounce);
   }
-  
+
   /* SOS Emergency Button Special Styles */
   .sos-pulse {
     animation: sos-pulse 2s infinite;
   }
-  
+
   @keyframes sos-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: scale(1);
       box-shadow: 0 0 0 0 hsl(var(--destructive) / 0.7);
     }
+
     50% {
       transform: scale(1.05);
       box-shadow: 0 0 0 10px hsl(var(--destructive) / 0);
@@ -149,9 +153,12 @@
   }
 
   @keyframes float {
-    0%, 100% {
+
+    0%,
+    100% {
       transform: translateY(0px);
     }
+
     50% {
       transform: translateY(-20px);
     }

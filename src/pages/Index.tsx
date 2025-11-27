@@ -46,7 +46,7 @@ const Index = () => {
                   </div>
                 </div>
                 <p className="text-muted-foreground mb-4 max-w-md">
-                  Comprehensive wellness platform connecting campus community to essential health services, 
+                  Comprehensive wellness platform connecting campus community to essential health services,
                   emergency support, and wellness programs.
                 </p>
                 <div className="flex space-x-4">
@@ -58,7 +58,7 @@ const Index = () => {
                   </Button>
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="font-semibold text-foreground mb-4">Quick Links</h4>
                 <div className="space-y-2">
@@ -76,7 +76,7 @@ const Index = () => {
                   </button>
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="font-semibold text-foreground mb-4">Contact Us</h4>
                 <div className="space-y-3">
@@ -95,7 +95,7 @@ const Index = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="border-t border-border mt-8 pt-8 text-center">
               <p className="text-muted-foreground text-sm">
                 © 2024 CampusCare+. All rights reserved.

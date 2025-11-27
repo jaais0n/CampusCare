@@ -111,10 +111,10 @@ export default {
           },
         },
         "alert-flash": {
-          "0%, 100%": { 
+          "0%, 100%": {
             backgroundColor: "rgb(220, 38, 38)" // Tailwind's red-600
           },
-          "50%": { 
+          "50%": {
             backgroundColor: "rgb(255, 255, 255)"
           },
         },

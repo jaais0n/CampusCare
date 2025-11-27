@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { Typewriter } from "./Typewriter";
 
 const FadeInOnScroll: React.FC<{ children: React.ReactNode; delay?: number; className?: string }> = ({ children, delay = 0, className = "" }) => {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -30,9 +31,8 @@ const FadeInOnScroll: React.FC<{ children: React.ReactNode; delay?: number; clas
     <div
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
-      className={`transform transition-all duration-700 ease-out ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-      } ${className}`}
+      className={`transform transition-all duration-700 ease-out ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+        } ${className}`}
     >
       {children}
     </div>
@@ -41,7 +41,7 @@ const FadeInOnScroll: React.FC<{ children: React.ReactNode; delay?: number; clas
 
 const FloatingElement: React.FC<{ children: React.ReactNode; delay?: number; className?: string }> = ({ children, delay = 0, className = "" }) => {
   return (
-    <div 
+    <div
       className={`animate-float ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
@@ -55,28 +55,28 @@ const HealthIllustration = () => (
     <circle cx="200" cy="200" r="180" fill="url(#gradient1)" opacity="0.1" />
     <circle cx="200" cy="200" r="140" fill="url(#gradient1)" opacity="0.15" />
     <circle cx="200" cy="200" r="100" fill="url(#gradient1)" opacity="0.2" />
-    
+
     <rect x="175" y="120" width="50" height="160" rx="10" fill="url(#gradient2)" />
     <rect x="120" y="175" width="160" height="50" rx="10" fill="url(#gradient2)" />
-    
-    <path 
-      d="M60 200 L100 200 L120 160 L140 240 L160 180 L180 220 L200 200 L340 200" 
-      stroke="#14b8a6" 
-      strokeWidth="4" 
+
+    <path
+      d="M60 200 L100 200 L120 160 L140 240 L160 180 L180 220 L200 200 L340 200"
+      stroke="#14b8a6"
+      strokeWidth="4"
       strokeLinecap="round"
       fill="none"
       className="animate-pulse"
     />
-    
+
     <circle cx="80" cy="120" r="8" fill="#14b8a6" opacity="0.6" />
     <circle cx="320" cy="280" r="12" fill="#f97316" opacity="0.6" />
     <circle cx="300" cy="100" r="6" fill="#22c55e" opacity="0.6" />
     <circle cx="100" cy="300" r="10" fill="#eab308" opacity="0.6" />
-    
+
     <circle cx="280" cy="140" r="25" stroke="#14b8a6" strokeWidth="4" fill="none" />
     <path d="M280 165 Q280 200 240 220" stroke="#14b8a6" strokeWidth="4" fill="none" strokeLinecap="round" />
     <circle cx="240" cy="220" r="8" fill="#14b8a6" />
-    
+
     <defs>
       <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#14b8a6" />
@@ -93,19 +93,19 @@ const HealthIllustration = () => (
 const WellnessIllustration = () => (
   <svg viewBox="0 0 300 300" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="150" cy="60" r="25" fill="#14b8a6" opacity="0.8" />
-    <path 
-      d="M150 85 L150 160 M150 120 L100 100 M150 120 L200 100 M150 160 L100 220 M150 160 L200 220" 
-      stroke="#14b8a6" 
-      strokeWidth="8" 
+    <path
+      d="M150 85 L150 160 M150 120 L100 100 M150 120 L200 100 M150 160 L100 220 M150 160 L200 220"
+      stroke="#14b8a6"
+      strokeWidth="8"
       strokeLinecap="round"
     />
-    
+
     <ellipse cx="150" cy="250" rx="80" ry="20" fill="#14b8a6" opacity="0.2" />
-    
+
     <path d="M60 80 L65 90 L75 85 L65 95 L60 105 L55 95 L45 85 L55 90 Z" fill="#f97316" opacity="0.7" />
     <path d="M240 120 L243 127 L250 125 L243 130 L240 137 L237 130 L230 125 L237 127 Z" fill="#22c55e" opacity="0.7" />
     <path d="M80 200 L82 205 L87 204 L82 207 L80 212 L78 207 L73 204 L78 205 Z" fill="#eab308" opacity="0.7" />
-    
+
     <circle cx="150" cy="130" r="90" stroke="#14b8a6" strokeWidth="2" strokeDasharray="10 5" opacity="0.3" />
     <circle cx="150" cy="130" r="110" stroke="#14b8a6" strokeWidth="1" strokeDasharray="5 10" opacity="0.2" />
   </svg>
@@ -116,23 +116,23 @@ const EmergencyIllustration = () => (
     <circle cx="150" cy="150" r="100" fill="#ef4444" opacity="0.1" className="animate-ping" style={{ animationDuration: '2s' }} />
     <circle cx="150" cy="150" r="80" fill="#ef4444" opacity="0.2" />
     <circle cx="150" cy="150" r="60" fill="#ef4444" opacity="0.3" />
-    
-    <path 
-      d="M150 70 L200 90 L200 150 Q200 200 150 230 Q100 200 100 150 L100 90 Z" 
-      fill="url(#shieldGrad)" 
+
+    <path
+      d="M150 70 L200 90 L200 150 Q200 200 150 230 Q100 200 100 150 L100 90 Z"
+      fill="url(#shieldGrad)"
       stroke="#ef4444"
       strokeWidth="3"
     />
-    
+
     <rect x="140" y="100" width="20" height="80" rx="4" fill="white" />
     <rect x="110" y="130" width="80" height="20" rx="4" fill="white" />
-    
+
     <path d="M220 100 Q240 120 220 140" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.6" />
     <path d="M235 90 Q265 120 235 150" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.4" />
-    
+
     <path d="M80 100 Q60 120 80 140" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.6" />
     <path d="M65 90 Q35 120 65 150" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.4" />
-    
+
     <defs>
       <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#ef4444" />
@@ -144,7 +144,9 @@ const EmergencyIllustration = () => (
 
 const HeroSection = () => {
   const { toast } = useToast();
-  
+  const [startWellness, setStartWellness] = useState(false);
+  const [startMadeSimple, setStartMadeSimple] = useState(false);
+
   const features = [
     {
       icon: Shield,
@@ -204,19 +206,39 @@ const HeroSection = () => {
                   <span className="text-sm text-primary font-medium">Your Campus Health Partner</span>
                 </div>
               </FadeInOnScroll>
-              
+
               <FadeInOnScroll delay={100}>
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-                  Campus
-                  <span className="bg-gradient-to-r from-primary via-teal-400 to-emerald-400 bg-clip-text text-transparent"> Wellness</span>
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight min-h-[3.5em] sm:min-h-[3em]">
+                  <Typewriter
+                    text="Campus"
+                    speed={70}
+                    cursor={false}
+                    onComplete={() => setStartWellness(true)}
+                  />
+                  {startWellness && (
+                    <Typewriter
+                      text=" Wellness"
+                      speed={70}
+                      className="bg-gradient-to-r from-primary via-teal-400 to-emerald-400 bg-clip-text text-transparent"
+                      cursor={false}
+                      onComplete={() => setStartMadeSimple(true)}
+                    />
+                  )}
                   <br />
-                  <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl">Made Simple</span>
+                  {startMadeSimple && (
+                    <Typewriter
+                      text="Made Simple"
+                      speed={70}
+                      className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl"
+                      cursor={true}
+                    />
+                  )}
                 </h1>
               </FadeInOnScroll>
-              
+
               <FadeInOnScroll delay={200}>
                 <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                  Comprehensive health and wellness platform connecting students and faculty 
+                  Comprehensive health and wellness platform connecting students and faculty
                   to emergency services, medical care, counseling, and fitness programs.
                 </p>
               </FadeInOnScroll>
@@ -266,7 +288,7 @@ const HeroSection = () => {
                     <HealthIllustration />
                   </div>
                 </FloatingElement>
-                
+
                 <FloatingElement delay={500} className="absolute -left-8 top-1/4">
                   <div className="bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl p-3 shadow-lg">
                     <div className="flex items-center gap-2">
@@ -315,11 +337,11 @@ const HeroSection = () => {
           <div className="mt-16 lg:mt-24">
             <FadeInOnScroll>
               <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-10">
-                Everything You Need for 
+                Everything You Need for
                 <span className="text-primary"> Campus Wellness</span>
               </h2>
             </FadeInOnScroll>
-            
+
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {features.map((feature, index) => (
                 <FadeInOnScroll key={index} delay={index * 100}>
@@ -355,7 +377,7 @@ const HeroSection = () => {
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <FadeInOnScroll>
             <h2 className="text-2xl md:text-3xl font-bold text-center text-foreground mb-4">
-              Trusted by 
+              Trusted by
               <span className="text-primary"> Campus Community</span>
             </h2>
             <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
@@ -373,7 +395,7 @@ const HeroSection = () => {
                 <div className="text-sm text-muted-foreground">Emergency Support</div>
               </div>
             </FadeInOnScroll>
-            
+
             <FadeInOnScroll delay={100}>
               <div className="text-center p-6 rounded-2xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors">
                 <div className="w-12 h-12 mx-auto mb-4 bg-green-500/10 rounded-xl flex items-center justify-center">
@@ -383,7 +405,7 @@ const HeroSection = () => {
                 <div className="text-sm text-muted-foreground">Students Served</div>
               </div>
             </FadeInOnScroll>
-            
+
             <FadeInOnScroll delay={200}>
               <div className="text-center p-6 rounded-2xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors">
                 <div className="w-12 h-12 mx-auto mb-4 bg-blue-500/10 rounded-xl flex items-center justify-center">
@@ -393,7 +415,7 @@ const HeroSection = () => {
                 <div className="text-sm text-muted-foreground">Health Professionals</div>
               </div>
             </FadeInOnScroll>
-            
+
             <FadeInOnScroll delay={300}>
               <div className="text-center p-6 rounded-2xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors">
                 <div className="w-12 h-12 mx-auto mb-4 bg-amber-500/10 rounded-xl flex items-center justify-center">
